@@ -1,0 +1,102 @@
+body {
+    background: #f8f9fa;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.agent-container {
+    max-width: 900px;
+    margin: 30px auto;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.agent-header {
+    background: linear-gradient(135deg, #764ba2, #667eea);
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+.session-list {
+    padding: 20px;
+}
+
+.session-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fdfdfd;
+    padding: 15px 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    transition: all 0.2s;
+}
+
+.session-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.session-info {
+    flex: 1;
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.online {
+    background: #28a745;
+}
+
+.offline {
+    background: #dc3545;
+}
+
+.session-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.session-status {
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.open {
+    background: #d4edda;
+    color: #155724;
+}
+
+.closed {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.join-btn {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.join-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.join-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #5a67d8, #6b46c1);
+}

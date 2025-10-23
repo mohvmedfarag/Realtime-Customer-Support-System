@@ -1,0 +1,114 @@
+6|5Fms0mPVxdNlQU6KHGtyqqovniFzZKM3BIXEqTaw94b6d8c0 agent1
+7|MlaJ2bsICu9OnuD4rEJ20K5TLOTqEwHJaInOzBUOa08a0409 agent2
+
+Rating::create([
+    'rater_id' => auth()->id(),
+    'rater_type' => 'user',
+    'rated_id' => $agent->id,
+    'rated_type' => 'agent',
+    'session_id' => $session->id,
+    'rating' => $request->rating,
+    'comment' => $request->comment,
+]);
+$average = $agent->ratingsReceived()->avg('rating');
+
+// *******************************************************************************************
+
+        function playBeep() {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.type = "sine";
+            oscillator.frequency.setValueAtTime(800, audioCtx.currentTime); // التردد
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); // مستوى الصوت
+
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.1); // صوت قصير
+        }
+
+        // ✅ Check if session closed by user
+        const sessionRef = database.ref('sessions/{{ $session->uuid }}');
+        const messagesRef = database.ref(`chats/{{ $session->uuid }}/messages`);
+        const currentAgentId = "{{ auth()->guard('agent')->user()->id ?? '' }}";
+        let initialAgentId = null;
+        let userMessageTimer = null;
+        let lastAgentMessageTime = Date.now();
+
+        sessionRef.once('value').then(snapshot => {
+            const data = snapshot.val();
+            if (data && data.agent_id) {
+                initialAgentId = data.agent_id;
+            }
+        });
+
+        sessionRef.on('child_changed', snapshot => {
+            const key = snapshot.key;
+            const value = snapshot.val();
+
+            if (key === 'status' && value === 'closed') {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'تم إنهاء المحادثة من طرف العميل',
+                    confirmButtonText: 'موافق',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                }).then(() => {
+                    window.location.href = "{{ route('agent') }}";
+                });
+            }
+
+            if (key === 'agent_id' && initialAgentId && value != currentAgentId) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'تنبيه!',
+                    text: 'تم تحويل هذه الجلسة إلى وكيل آخر لعدم التفاعل خلال الفترة المحددة.',
+                    confirmButtonText: 'موافق',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                }).then(() => {
+                    window.location.href = "{{ route('agent') }}";
+                });
+            }
+        });
+
+        messagesRef.on('child_added', snapshot => {
+        const message = snapshot.val();
+
+        if (!message) return;
+
+        // 📩 لو الرسالة من العميل (user)
+        if (message.sender === 'user') {
+            // احسب وقتها
+            console.log("👤 المستخدم أرسل رسالة - بدء العد التنازلي");
+            clearTimeout(userMessageTimer); // نحذف أي عداد قديم
+
+            // ⏱️ بعد 30 ثانية لو الوكيل مردش → نحذره
+            userMessageTimer = setTimeout(() => {
+                const secondsSinceLastAgentMsg = (Date.now() - lastAgentMessageTime) / 1000;
+
+                if (secondsSinceLastAgentMsg >= 30) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'تحذير!',
+                        text: 'لم ترد على رسالة العميل منذ 30 ثانية، سيتم تحويل الجلسة لوكيل آخر بعد 30 ثانية إضافية إن لم يتم الرد.',
+                        confirmButtonText: 'حسنًا',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false
+                    });
+                }
+            }, 30000);
+        }
+
+        // 🧑‍💼 لو الرسالة من الوكيل
+        if (message.sender === 'agent') {
+            lastAgentMessageTime = Date.now();
+            clearTimeout(userMessageTimer); // ألغِ العداد
+            console.log("✅ الوكيل رد — تم إيقاف التحذير");
+        }
+    });
+
+    // *******************************************************************************************************

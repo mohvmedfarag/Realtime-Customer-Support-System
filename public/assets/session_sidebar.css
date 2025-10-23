@@ -1,0 +1,52 @@
+/* session sidebar */
+    .container-fluid {
+        display: flex;
+        height: 100vh;
+    }
+
+    .sessions-sidebar {
+        width: 250px;
+        background: #f7f7f8;
+        border-right: 1px solid #ddd;
+        padding: 10px;
+        overflow-y: auto;
+
+        /* Animation */
+        opacity: 1;
+        transition: opacity 0.3s ease;
+    }
+
+    .sessions-sidebar.hidden {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .session-item {
+        padding: 10px;
+        margin-bottom: 8px;
+        background: white;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .session-item:hover {
+        background: #ececec;
+    }
+
+    .sessions-sidebar small {
+        font-size: 11px;
+    }
+
+    #chatNotification {
+        display: none;
+        background: #eaf7ff;
+        padding: 8px;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    td a {
+        text-decoration: none;
+        color: black;
+    }

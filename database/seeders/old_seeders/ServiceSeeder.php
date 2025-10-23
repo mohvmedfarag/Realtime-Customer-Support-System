@@ -1,0 +1,35 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Service;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Seeder;
+
+class ServiceSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        Service::create([
+            'name' => 'زيوت وفلاتر',
+        ]);
+        Service::create([
+            'name' => 'كاوتش',
+        ]);
+        Service::create([
+            'name' => 'بطارية',
+        ]);
+        Service::create([
+            'name' => 'خدمة كار كير',
+        ]);
+        Service::create([
+            'name' => 'صيانة دورية',
+        ]);
+        Service::create([
+            'name' => 'خدمات اخري',
+        ]);
+    }
+}
