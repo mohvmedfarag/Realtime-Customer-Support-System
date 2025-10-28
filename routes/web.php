@@ -5,11 +5,13 @@ use Illuminate\Support\Facades\Route;
 use Kreait\Firebase\Exception\FirebaseException;
 use App\Http\Controllers\Web\User\ChatController;
 use App\Http\Controllers\Web\Auth\LoginController;
+use App\Http\Controllers\Web\User\Dashboard\DashboardController;
 use App\Http\Controllers\Web\User\MessageController;
 use App\Http\Controllers\Web\User\SessionController;
 use App\Http\Controllers\Web\User\MessageReactionController;
 use App\Http\Controllers\Web\User\RatingController;
 use App\Http\Controllers\Web\User\StarMessageController;
+use App\Http\Controllers\Web\Agent\DashboardController as AgentDashboardController;
 
 require __Dir__ . '/dashboard.php';
 
@@ -17,10 +19,30 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('login', [LoginController::class, 'index'])->name('showLoginForm');
+Route::get('login', [LoginController::class, 'index'])->name('showLoginForm')->middleware('guest');
 Route::post('login', [LoginController::class, 'login'])->name('login');
 Route::post('agent/logout', [LoginController::class, 'UserLogout'])->name('user.logout')->middleware('auth:web');
 Route::post('user/logout', [LoginController::class, 'AgentLogout'])->name('agent.logout')->middleware('auth:agent');
+
+Route::controller(DashboardController::class)->group(function(){
+    Route::middleware('auth:web')->group(function(){
+        Route::get('user/dashboard', 'index')->name('user.dashboard');
+        Route::get('chat-topics/{id}/children', 'getSubTopics');
+        Route::get('messages/{session}/show', 'getMessages')->name('user.getMessages');
+        Route::post('chat-sessions/create-from-topic', 'createSessionFromTopic')->name('createSessionFromTopic');
+        Route::post('chat-sessions/create', 'createSession')->name('user.createSession');
+        Route::post('chat/session/send', 'sendMessageByUser')->name('user.sendMessage');
+    });
+});
+
+Route::controller(AgentDashboardController::class)->group(function(){
+    Route::middleware('auth:agent')->group(function(){
+        Route::get('agent/dashboard', 'index')->name('agent.dashboard');
+        Route::get('agent/sessions/show', 'showWaitingSessions')->name('agent.sessions.show');
+        Route::get('agent/sessions/{session}/join', 'joinWaitingSessions')->name('agent.sessions.join');
+        Route::post('agent/session/send', 'sendMessageByAgent')->name('agent.sendMessage');
+    });
+});
 
 Route::controller(ChatController::class)->group(function(){
 

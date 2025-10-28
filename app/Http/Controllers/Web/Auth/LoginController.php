@@ -27,14 +27,14 @@ class LoginController extends Controller
 
         if ($user) {
             Auth::guard('web')->login($user);
-            return redirect()->route('sessions');
+            return redirect()->route('user.dashboard');
         }
 
         $agent = Agent::where('email', $email)->first();
         if ($agent) {
             Auth::guard('agent')->login($agent);
             $agent->update([ 'status' => 'online' ]);
-            return redirect()->route('agent');
+            return redirect()->route('agent.dashboard');
         }
 
         return redirect()->back()->with('error', 'Invalid credentials');

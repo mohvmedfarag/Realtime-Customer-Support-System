@@ -17,7 +17,7 @@ class Message extends Model
 
     public function sessionChat()
     {
-        return $this->belongsTo(SessionChat::class, 'session_chat_id');
+        return $this->belongsTo(SessionChat::class, 'session_chat_id', 'id');
     }
 
     public function response()

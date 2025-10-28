@@ -24,7 +24,7 @@ class SessionChat extends Model
 
     public function messages()
     {
-        return $this->hasMany(Message::class, 'session_chat_id');
+        return $this->hasMany(Message::class, 'session_chat_id', 'id');
     }
 
     protected static function boot()
