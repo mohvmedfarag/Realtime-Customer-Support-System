@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\Web\User\Dashboard;
 
-use App\Http\Controllers\Controller;
-use App\Models\ChatTopic;
 use App\Models\Message;
+use App\Models\ChatTopic;
 use App\Models\SessionChat;
 use Illuminate\Http\Request;
+use Kreait\Firebase\Factory;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
@@ -58,12 +59,6 @@ class DashboardController extends Controller
             'status' => 'waiting_agent',
         ]);
 
-        // ✅ أول رسالة في الجلسة
-        // $message = $session->messages()->create([
-        //     'sender' => 'user',
-        //     'content' => "موضوع المحادثة: " . $session->name,
-        // ]);
-
         $messages = $session->messages()->oldest()->get();
 
         return response()->json($messages);
@@ -71,12 +66,25 @@ class DashboardController extends Controller
 
     public function getMessages(SessionChat $session)
     {
+        $user = Auth::user();
         if ($session->status === 'in_agent') {
             $messages = $session->messages()->oldest()->get();
             return response()->json($messages);
         }
 
         $session->update(['status' => 'waiting_agent',]);
+
+        $database = $this->getFirebaseDatabase();
+        $database->getReference("sessions/{$session->id}")
+            ->set([
+                'id'         => $session->id,
+                'name'       => $session->name,
+                'status'     => $session->status,
+                'user_name'  => $user->name,
+                'agent_name' => null,
+                'agent_id'   => null,
+                'created_at' => now()->toDateTimeString(),
+            ]);
         $messages = $session->messages()->oldest()->get();
         return response()->json($messages);
     }
@@ -92,18 +100,30 @@ class DashboardController extends Controller
         $existing = $user->chat->sessionChats()->where('name', $request->name)->first();
         if ($existing) {
             return response()->json([
-                'message' => 'لديك جلسة بالفعل بنفس الاسم',
+                'message'    => 'لديك جلسة بالفعل بنفس الاسم',
                 'session_id' => $existing->id,
             ], 409);
         }
 
         $session = $user->chat->sessionChats()->create([
-            'name' => $request->name,
+            'name'   => $request->name,
             'status' => 'waiting_agent',
         ]);
 
+        $database = $this->getFirebaseDatabase();
+        $database->getReference("sessions/{$session->id}")
+            ->set([
+                'id'         => $session->id,
+                'name'       => $session->name,
+                'status'     => $session->status,
+                'user_name'  => $user->name,
+                'agent_name' => null,
+                'agent_id'   => null,
+                'created_at' => now()->toDateTimeString(),
+            ]);
+
         $session->messages()->create([
-            'sender' => 'user',
+            'sender'  => 'user',
             'content' => "موضوع المحادثة: " . $session->name,
         ]);
 
@@ -127,9 +147,33 @@ class DashboardController extends Controller
             'session_chat_id' => $session->id,
         ]);
 
+        $database = $this->getFirebaseDatabase();
+
+        $firebaseMessage = [
+            'id' => $message->id,
+            'sender' => 'user',
+            'content' => $message->content,
+            'created_at' => $message->created_at->toDateTimeString(),
+        ];
+
+        $ref = "chats/{$session->id}/messages";
+        $firebaseRecord = $database->getReference($ref)->push($firebaseMessage);
+
+        $message->update(['firebase_id' => $firebaseRecord->getKey()]);
+
         return response()->json([
             'message' => 'تم إرسال الرسالة بنجاح',
             'data' => $message,
         ]);
+    }
+
+    private function getFirebaseDatabase()
+    {
+        $database = (new Factory)
+            ->withServiceAccount(storage_path('app/firebase_credentials.json'))
+            ->withDatabaseUri(env('FIREBASE_DATABASE_URL'))
+            ->createDatabase();
+
+        return $database;
     }
 }

@@ -59,12 +59,14 @@
                             @endif
                         @endforeach
                     </div>
-
+                    <small id="typingIndicator"
+                        style="display: none; color:#888; background-color: #f8f9fa; padding-left: 15px;">يكتب
+                        الان...</small>
                     <!-- Message Input -->
                     <div class="card-footer bg-white">
                         <form id="send-message" class="d-flex align-items-center">
                             <input type="hidden" name="session_id" value="{{ $session->id }}">
-                            <input type="text" name="message" class="form-control me-2 rounded-pill"
+                            <input type="text" name="message" class="form-control me-2 rounded-pill" id="messageInput"
                                 placeholder="Type a message...">
                             <button type="submit" class="btn btn-primary rounded-pill">
                                 <i class="fa fa-paper-plane"></i>
@@ -78,7 +80,53 @@
 @endsection
 @section('scripts')
     <script>
+        const firebaseConfig = {
+            databaseURL: "{{ env('FIREBASE_DATABASE_URL') }}"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        const sessionId = "{{ $session->id }}";
+        const messagesRef = database.ref('chats/' + sessionId + '/messages');
+
+        let existingMessages = @json($messages->pluck('firebase_id')->filter()->values());
+        existingMessages = existingMessages.filter(id => id !== null);
+
+        // Listen for new messages
+        messagesRef.on('child_added', function(snapshot) {
+            const message = snapshot.val();
+            const firebaseId = snapshot.key;
+            if (existingMessages.includes(firebaseId)) {
+                return;
+            }
+            existingMessages.push(firebaseId);
+            console.log("New message received from Firebase:", message);
+
+            if (message.sender === 'agent') {
+                $(".chat-box").append(`
+                    <div class="d-flex justify-content-end mb-3">
+                        <div class="bg-primary text-white p-2 rounded-3 shadow-sm">
+                            ${message.content}
+                        </div>
+                    </div>
+                `);
+            } else {
+                $(".chat-box").append(`
+                    <div class="d-flex mb-3">
+                        <div class="bg-light p-2 rounded-3 shadow-sm">
+                            ${message.content}
+                        </div>
+                    </div>
+                `);
+            }
+
+            // scroll down
+            $(".chat-box").scrollTop($(".chat-box")[0].scrollHeight);
+        });
+    </script>
+    <script>
         $(document).ready(function() {
+            const typingRef = database.ref('sessions/' + sessionId + '/typing');
             // إرسال رسالة من الـ Agent
             $("#send-message").on("submit", function(e) {
                 e.preventDefault();
@@ -98,18 +146,10 @@
                         message: message
                     },
                     success: function(response) {
-                        // إضافة الرسالة في واجهة الشات مباشرة
-                        $(".chat-box").append(`
-                    <div class="d-flex justify-content-end mb-3">
-                        <div class="bg-primary text-white p-2 rounded-3 shadow-sm">
-                            ${response.data.content}
-                        </div>
-                    </div>
-                `);
-
-                        // تفريغ الحقل بعد الإرسال
+                        typingRef.set({
+                            agent_typing: false,
+                        });
                         messageInput.val('');
-                        // التمرير للأسفل
                         $(".chat-box").scrollTop($(".chat-box")[0].scrollHeight);
                     },
                     error: function(xhr) {
@@ -117,6 +157,34 @@
                     }
                 });
             });
+        });
+    </script>
+    <script>
+        const typingRef = database.ref('sessions/{{ $session->id }}/typing');
+
+        $("input[name='message']").on("input", function() {
+            typingRef.set({
+                agent_typing: true,
+            });
+
+            // نوقف الحالة بعد ثانيتين من التوقف عن الكتابة
+            clearTimeout(window.typingTimeout);
+            window.typingTimeout = setTimeout(() => {
+                typingRef.set({
+                    agent_typing: false,
+                });
+            }, 9000);
+        });
+
+        typingIndicator = document.getElementById('typingIndicator');
+        typingRef.on("value", (snapshot) => {
+            const data = snapshot.val();
+            if (data.user_typing === true) {
+                typingIndicator.innerText = "يكتب الآن...";
+                typingIndicator.style.display = "block";
+            } else {
+                typingIndicator.style.display = "none";
+            }
         });
     </script>
 @endsection

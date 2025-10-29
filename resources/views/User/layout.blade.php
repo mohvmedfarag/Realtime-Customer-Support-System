@@ -24,8 +24,16 @@
 
     <div class="chat-popup" id="chatPopup">
         <div class="chat-header">
-            <h6>خدمة العملاء</h6>
-            <i class="fa-solid fa-xmark" id="closeChat" style="cursor: pointer;"></i>
+            <div>
+                <h6 style="margin: 0">خدمة العملاء</h6>
+            </div>
+            <div>
+                <i class="fa-solid fa-up-right-and-down-left-from-center" id="expandChat"
+                    style="cursor:pointer; margin-right:10px;"></i>
+                <i class="fa-solid fa-down-left-and-up-right-to-center d-none" id="minimizeChat"
+                    style="cursor:pointer; margin-right:10px;"></i>
+                <i class="fa-solid fa-xmark" id="closeChat" style="cursor: pointer;"></i>
+            </div>
         </div>
 
         <div class="topics-section" id="topicsSection">
@@ -61,14 +69,14 @@
         </div>
 
         <div class="chat-body d-none" id="chatBody"></div>
-
+        <small id="typingIndicator" style="display: none; color:#888; margin-left: 5px;">يكتب الان...</small>
+        <audio id="typingSound" src="{{ asset('sounds/typing.mp3') }}"></audio>
         <form id="send-message">
             <div class="chat-footer d-none" id="chatFooter">
                 <input type="text" name="message" id="chatInput" placeholder="اكتب رسالتك..." />
                 <button id="sendBtn" type="submit"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
         </form>
-
     </div>
 
 
@@ -98,51 +106,113 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ asset('assets/js/user/layout.js') }}"></script>
+    <script src="{{ asset('assets/js/user/sendMessage.js') }}"></script>
     <script>
-        $(document).ready(function() {
-            let currentSessionId = null;
+        window.csrfToken = "{{ csrf_token() }}";
+        window.createSessionFromTopicUrl = "{{ route('createSessionFromTopic') }}";
+        window.createNewSession = "{{ route('user.createSession') }}";
+    </script>
 
-            // عند فتح جلسة جديدة أو قديمة، خزّن الـ ID بتاعها
-            $(document).on("click", ".session-item, .topic-item[data-final='1']", function() {
-                currentSessionId = $(this).data("id");
-                $("#chatBody").removeClass("d-none");
-                $("#chatFooter").removeClass("d-none");
-                $("#chatBody").html(''); // ممكن هنا لاحقًا تجيب الرسائل القديمة
-            });
+    <script>
+        let firebaseAppInitialized = false;
+        let firebaseDatabase = null;
+        let firebaseListener = null;
 
-            // إرسال رسالة
-            $("#send-message").on("submit", function(e) {
-                e.preventDefault();
+        $(document).on("click", ".session-item, .topic-item[data-final='1']", function() {
+            currentSessionId = $(this).data("id");
+            $("#chatBody").removeClass("d-none");
+            $("#chatFooter").removeClass("d-none");
+            $("#topicsSection").addClass("d-none");
+            $("#chatBody").html('');
+            // أول مرة فقط نفعّل Firebase
+            if (!firebaseAppInitialized) {
+                const firebaseConfig = {
+                    databaseURL: "{{ env('FIREBASE_DATABASE_URL') }}"
+                };
+                firebase.initializeApp(firebaseConfig);
+                firebaseDatabase = firebase.database();
+                firebaseAppInitialized = true;
+            }
 
-                const message = $("#chatInput").val().trim();
-                if (!message) return;
+            // لو فيه listener قديم شغال على جلسة أخرى، نفصله
+            if (firebaseListener) {
+                firebaseListener.off();
+            }
 
-                if (!currentSessionId) {
-                    alert("يرجى اختيار جلسة أولاً قبل إرسال الرسالة");
-                    return;
+            // اربط listener على الجلسة الجديدة
+            firebaseListener = firebaseDatabase.ref('chats/' + currentSessionId + '/messages');
+
+            firebaseListener.on('child_added', function(snapshot) {
+                const message = snapshot.val();
+                console.log("🔥 New message from Firebase:", message);
+
+                // متضيفش الرسائل اللي أرسلها نفس اليوزر عشان متتكررش
+                if (message.sender === 'user') {
+                    $("#chatBody").append(`
+                        <div class="chat-message user">${message.content}</div>
+                    `);
+                } else if (message.sender === 'agent') {
+                    $("#chatBody").append(`
+                        <div class="chat-message">${message.content}</div>
+                    `);
                 }
 
-                $.ajax({
-                    url: "{{ route('user.sendMessage') }}",
-                    method: "POST",
-                    data: {
-                        _token: "{{ csrf_token() }}",
-                        session_id: currentSessionId,
-                        content: message
-                    },
-                    success: function(response) {
-                        // عرض الرسالة في الواجهة
-                        $("#chatBody").append(`
-                    <div class="chat-message user">${message}</div>
-                `);
-                        $("#chatInput").val('');
-                        $("#chatBody").scrollTop($("#chatBody")[0].scrollHeight);
-                    },
-                    error: function(xhr) {
-                        let error = xhr.responseJSON?.message || "حدث خطأ أثناء إرسال الرسالة";
-                        alert(error);
-                    }
+                $("#chatBody").scrollTop($("#chatBody")[0].scrollHeight);
+            });
+
+
+
+            // Listen for session
+            const sessionRef = firebaseDatabase.ref('sessions/' + currentSessionId);
+            sessionRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return;
+                let header = 'خدمة العملاء';
+                if (data.agent_name) {
+                    header = `<span style="color:#0d6efd;">${data.agent_name}</span>
+                              <small>available</small>
+                            `;
+                }
+                $(".chat-header h6").html(header);
+                if (data.status === 'in_agent') {
+                    $(".chat-header small").text("available");
+                } else if (data.status === 'waiting_agent') {
+                    $(".chat-header h6").html(`<small>في انتظار الرد...</small>`);
+                }
+            });
+
+            const typingRef = firebaseDatabase.ref('sessions/' + currentSessionId + '/typing');
+
+            $("input[name='message']").on("input", function(){
+                typingRef.set({
+                    user_typing : true,
                 });
+
+                // نوقف الحالة بعد ثانيتين من التوقف عن الكتابة
+                clearTimeout(window.typingTimeout);
+                window.typingTimeout = setTimeout(() => {
+                    typingRef.set({
+                        user_typing : false,
+                    });
+                }, 2000);
+            });
+
+            typingIndicator = document.getElementById('typingIndicator');
+            const typingSound = document.getElementById("typingSound");
+            typingRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+
+                if (data.agent_typing === true) {
+                    typingIndicator.innerText = "يكتب الآن...";
+                    typingIndicator.style.display = "block";
+                    if (typingSound.paused) {
+                        typingSound.play().catch(() => {})
+                    }
+                } else {
+                    typingIndicator.style.display = "none";
+                    typingSound.pause();
+                    typingSound.currentTime = 0;
+                }
             });
         });
     </script>

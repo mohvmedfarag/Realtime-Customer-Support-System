@@ -31,19 +31,18 @@ $(document).on("click", ".topic-item", function () {
     // 1️⃣ لو الموضوع نهائي → أنشئ session جديدة
     if (isFinal == 1) {
         $.ajax({
-            url: "{{ route('createSessionFromTopic') }}",
+            url: window.createSessionFromTopicUrl,
             method: "POST",
             data: {
-                _token: "{{ csrf_token() }}",
+                _token: window.csrfToken,
                 topic_id: topicId,
                 topic_name: topicName
             },
-            success: function (response) {
+            success: function () {
                 $("#topicsSection").fadeOut(300, function () {
                     // إظهار الشات بعد الإخفاء
                     $("#chatBody").removeClass("d-none").html(`
                                 <div class="chat-message">تم إنشاء جلسة جديدة بعنوان: <b>${topicName}</b></div>
-                                <div class="chat-message text-muted">${response.content}</div>
                             `);
                     $("#chatFooter").removeClass("d-none").hide().fadeIn(
                         300);
@@ -168,10 +167,10 @@ $("#session-form").on("submit", function (e) {
     }
 
     $.ajax({
-        url: "{{ route('user.createSession') }}",
+        url: window.createNewSession,
         method: "POST",
         data: {
-            _token: "{{ csrf_token() }}",
+            _token: window.csrfToken,
             name: sessionName
         },
         success: function (response) {
@@ -179,9 +178,8 @@ $("#session-form").on("submit", function (e) {
             $("#topicsSection").fadeOut(300, function () {
                 // عرض الشات بعد الإخفاء
                 $("#chatBody").removeClass("d-none").html(`
-                                <div class="chat-message">تم إنشاء جلسة جديدة بعنوان: <b>${response.session.name}</b></div>
-                                <div class="chat-message user text-muted">${response.message}</div>
-                            `);
+                        <div class="chat-message">تم إنشاء جلسة جديدة بعنوان: <b>${response.session.name}</b></div>
+                    `);
                 $("#chatFooter").removeClass("d-none").hide().fadeIn(300);
             });
         },
@@ -227,6 +225,25 @@ $("#session-form").on("submit", function (e) {
     });
 });
 
+
+// minimize and maximize chat popup
+document.addEventListener("DOMContentLoaded", function () {
+    const chatPopup = document.getElementById("chatPopup");
+    const expandBtn = document.getElementById("expandChat");
+    const minimizeBtn = document.getElementById("minimizeChat");
+
+    expandBtn.addEventListener("click", function () {
+        chatPopup.classList.add("expanded");
+        expandBtn.classList.add("d-none");
+        minimizeBtn.classList.remove("d-none");
+    });
+
+    minimizeBtn.addEventListener("click", function () {
+        chatPopup.classList.remove("expanded");
+        minimizeBtn.classList.add("d-none");
+        expandBtn.classList.remove("d-none");
+    });
+});
 
 // Sidebar toggle functionality
 const toggleBtn = document.getElementById('toggleBtn');

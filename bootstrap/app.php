@@ -29,7 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         });
         $middleware->redirectUsersTo(function(){
             if (Auth::guard('admin')) {
-                return route('dashboard');
+                return route('dashboard.index');
             }else if( Auth::guard('agent') ){
                 return route('agent');
             }else{

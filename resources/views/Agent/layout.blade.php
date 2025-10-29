@@ -93,7 +93,7 @@
 
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
-        <h4 style="margin-left: 45px;">Agent</h4>
+        <h4 style="margin-left: 45px;">{{ Auth::guard('agent')->user()->name }}</h4>
         <div style="margin-top: 15px;">
             <a href="{{ route('agent.dashboard') }}"
                 class="{{ request()->routeIs('agent.dashboard') ? 'active' : '' }}">Dashboard</a>
@@ -110,33 +110,31 @@
                 </div>
             </a>
 
-            @if ($session)
-                @if ($session->agent_id === Auth::guard('agent')->user()->id)
-                    <a href="{{ route('agent.sessions.join', $session->id) }}" class="" style="display: flex;">
-                        <div>
-                            My Active Sessions
-                        </div>
-                        <div style="position:relative; margin-left: 5px;">
-                            <i class="fa-solid fa-comments fa-lg"></i>
-                            <span
-                                style="font-size: 12px; background-color: #198754; padding: 0px 5px; border-radius: 50%; position: absolute; top: -6px; right: -5px;">
-                                1</span>
-                        </div>
-                    </a>
-                @else
-                    <a href="#" class="" style="display: flex;">
-                        <div>
-                            My Active Sessions
-                        </div>
-                        <div style="position:relative; margin-left: 5px;">
-                            <i class="fa-solid fa-comments fa-lg"></i>
-                            <span
-                                style="font-size: 12px; background-color: #198754; padding: 0px 5px; border-radius: 50%; position: absolute; top: -6px; right: -5px;">
-                                0</span>
-                        </div>
-                    </a>
-                @endif
+            <!-- My Active Sessions -->
+            @if ($activeSession)
+                <a href="{{ route('agent.sessions.join', $activeSession->id) }}" class="" style="display: flex;">
+                    <div>My Active Sessions</div>
+                    <div style="position:relative; margin-left: 5px;">
+                        <i class="fa-solid fa-comments fa-lg"></i>
+                        <span
+                            style="font-size: 12px; background-color: #198754; padding: 0px 5px; border-radius: 50%; position: absolute; top: -6px; right: -5px;">
+                            1
+                        </span>
+                    </div>
+                </a>
+            @else
+                <a href="javascript:void(0)" class="disabled" style="display: flex; opacity: 0.6; cursor: not-allowed;">
+                    <div>My Active Sessions</div>
+                    <div style="position:relative; margin-left: 5px;">
+                        <i class="fa-solid fa-comments fa-lg"></i>
+                        <span
+                            style="font-size: 12px; background-color: #198754; padding: 0px 5px; border-radius: 50%; position: absolute; top: -6px; right: -5px;">
+                            0
+                        </span>
+                    </div>
+                </a>
             @endif
+
 
             <a href="javascript:void(0)" onclick="document.getElementById('agent-logout').submit()"
                 class="">Logout</a>
