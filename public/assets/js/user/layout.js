@@ -75,16 +75,16 @@ $(document).on("click", ".topic-item", function () {
                 }
 
                 let html = `
-                                <div class="back-btn" style="cursor: pointer;">
-                                    <i class="fa-solid fa-arrow-left"></i>
-                                </div>
-                            `;
+                    <div class="back-btn" style="cursor: pointer;">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </div>
+                `;
 
                 children.forEach(child => {
                     html += `
-                                    <div class="topic-item" data-id="${child.id}" data-name="${child.title}" data-final="${child.is_final}">
-                                        ${child.title}</div>
-                                `;
+                        <div class="topic-item" data-id="${child.id}" data-name="${child.title}" data-final="${child.is_final}">
+                            ${child.title}</div>
+                        `;
                 });
 
                 $("#topicsList").fadeOut(200, function () {
@@ -119,42 +119,74 @@ $(document).on("click", ".topic-item", function () {
             success: function (messages) {
                 if (messages.length === 0) {
                     $("#chatBody").html(`
-                                <div class="chat-message text-muted">لا توجد رسائل في هذه الجلسة.</div>
-                            `);
+                        <div class="chat-message text-muted">لا توجد رسائل في هذه الجلسة.</div>
+                    `);
                     return;
                 }
 
-                let chatHTML = `<div class="chat-message text-center text-muted mb-2">
-                                            المحادثة السابقة (${sessionName})
-                                        </div>`;
+                let chatHTML = `
+                    <div class="chat-message text-center text-muted mb-2">
+                        المحادثة السابقة (${sessionName})
+                    </div>`;
 
                 messages.forEach(msg => {
+                    const isLong = msg.is_long; // من الداتا بيز
+                    let contentHTML = msg.content;
+
+                    // لو الرسالة طويلة، نعرض أول 150 حرف فقط
+                    if (isLong) {
+                        const shortText = msg.content.substring(0, 150);
+                        contentHTML = `
+                            <span class="short-text">${shortText}...</span>
+                            <span class="full-text d-none">${msg.content}</span>
+                            <button class="show-more-btn btn btn-link p-0" style="font-size: 13px;">عرض المزيد</button>
+                        `;
+                    }
+
                     if (msg.sender === 'user') {
                         chatHTML += `
-                                    <div class="chat-message user">
-                                        ${msg.content}
-                                    </div>
-                                `;
+                            <div class="chat-message user">
+                                ${contentHTML}
+                            </div>
+                        `;
                     } else {
                         chatHTML += `
-                                    <div class="chat-message">
-                                        ${msg.content}
-                                    </div>
-                                `;
+                            <div class="chat-message">
+                                ${contentHTML}
+                            </div>
+                        `;
                     }
                 });
+
 
                 $("#chatBody").html(chatHTML);
                 $("#chatBody").scrollTop($("#chatBody")[0].scrollHeight);
             },
             error: function () {
                 $("#chatBody").html(`
-                            <div class="chat-message text-danger">حدث خطأ أثناء تحميل الرسائل.</div>
-                        `);
+                    <div class="chat-message text-danger">حدث خطأ أثناء تحميل الرسائل.</div>
+                `);
             }
         });
     }
 });
+
+$(document).on("click", ".show-more-btn", function () {
+    const parent = $(this).closest(".chat-message");
+    const shortText = parent.find(".short-text");
+    const fullText = parent.find(".full-text");
+
+    if (shortText.hasClass("d-none")) {
+        shortText.removeClass("d-none");
+        fullText.addClass("d-none");
+        $(this).text("عرض المزيد");
+    } else {
+        shortText.addClass("d-none");
+        fullText.removeClass("d-none");
+        $(this).text("عرض أقل");
+    }
+});
+
 
 // إنشاء جلسة جديدة يدويًا
 $("#session-form").on("submit", function (e) {
@@ -229,17 +261,34 @@ $("#session-form").on("submit", function (e) {
 // minimize and maximize chat popup
 document.addEventListener("DOMContentLoaded", function () {
     const chatPopup = document.getElementById("chatPopup");
+    const topicsSection = document.getElementById('topicsSection');
+    const topicsList = document.getElementById('topicsList');
+    const topicItems = document.querySelectorAll('.topic-item');
     const expandBtn = document.getElementById("expandChat");
     const minimizeBtn = document.getElementById("minimizeChat");
+    const chatBody = document.getElementById('chatBody');
 
     expandBtn.addEventListener("click", function () {
         chatPopup.classList.add("expanded");
         expandBtn.classList.add("d-none");
+        topicsSection.classList.add('expanded');
+        chatBody.classList.add('expanded');
+        topicsList.classList.add('expanded');
+
+        topicItems.forEach( item => {
+            item.classList.add('expanded');
+        });
         minimizeBtn.classList.remove("d-none");
     });
 
     minimizeBtn.addEventListener("click", function () {
         chatPopup.classList.remove("expanded");
+        topicsSection.classList.remove("expanded");
+        topicsList.classList.remove("expanded");
+        topicItems.forEach( item => {
+            item.classList.remove('expanded');
+        });
+        chatBody.classList.remove('expanded');
         minimizeBtn.classList.add("d-none");
         expandBtn.classList.remove("d-none");
     });

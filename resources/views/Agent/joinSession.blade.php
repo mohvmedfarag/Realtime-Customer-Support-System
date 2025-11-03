@@ -47,17 +47,35 @@
                             @if ($msg->sender === 'user')
                                 <div class="d-flex mb-3">
                                     <div class="bg-light p-2 rounded-3 shadow-sm">
-                                        {{ $msg->content }}
+                                        @if ($msg->is_long)
+                                            <p class="mb-0 message-text">
+                                                <span class="short-text">{{ Str::limit($msg->content, 50, '') }}</span>
+                                                <span class="full-text d-none">{{ $msg->content }}</span>
+                                            </p>
+                                            <a href="#" class="toggle-more text-decoration-none text-primary small">عرض المزيد</a>
+                                        @else
+                                            {{ $msg->content }}
+                                        @endif
                                     </div>
                                 </div>
                             @else
                                 <div class="d-flex justify-content-end mb-3">
                                     <div class="bg-primary text-white p-2 rounded-3 shadow-sm">
-                                        {{ $msg->content }}
+                                        @if ($msg->is_long)
+                                            <p class="mb-0 message-text">
+                                                <span class="short-text">{{ Str::limit($msg->content, 50, '') }}</span>
+                                                <span class="full-text d-none">{{ $msg->content }}</span>
+                                            </p>
+                                            <a href="#" class="toggle-more text-decoration-none text-light small">عرض
+                                                المزيد</a>
+                                        @else
+                                            {{ $msg->content }}
+                                        @endif
                                     </div>
                                 </div>
                             @endif
                         @endforeach
+
                     </div>
                     <small id="typingIndicator"
                         style="display: none; color:#888; background-color: #f8f9fa; padding-left: 15px;">يكتب
@@ -78,8 +96,49 @@
         </div>
     </div>
 @endsection
+
+
 @section('scripts')
     <script>
+        function formatMessage(content, sender) {
+            const maxLength = 50; // الحد الأقصى لعدد الأحرف قبل "عرض المزيد"
+            if (content.length <= maxLength) {
+                return `<p class="mb-0">${content}</p>`;
+            }
+
+            const shortText = content.substring(0, maxLength);
+
+            if (sender === 'agent') {
+                return `
+                    <p class="mb-0 message-text">
+                        <span class="short-text">${shortText}</span>
+                        <span class="full-text d-none">${content}</span>
+                    </p>
+                    <a href="#" class="toggle-more text-decoration-none small" style="color:white;">عرض المزيد</a>
+                `;
+            } else {
+                return `
+                    <p class="mb-0 message-text">
+                        <span class="short-text">${shortText}</span>
+                        <span class="full-text d-none">${content}</span>
+                    </p>
+                    <a href="#" class="toggle-more text-decoration-none text-primary small">عرض المزيد</a>
+                `;
+            }
+
+        }
+
+        // التعامل مع زر عرض المزيد / عرض أقل
+        $(document).on("click", ".toggle-more", function(e) {
+            e.preventDefault();
+            const message = $(this).prev(".message-text");
+            message.find(".short-text, .full-text").toggleClass("d-none");
+            if ($(this).text() === "عرض المزيد") {
+                $(this).text("عرض أقل");
+            } else {
+                $(this).text("عرض المزيد");
+            }
+        });
         const firebaseConfig = {
             databaseURL: "{{ env('FIREBASE_DATABASE_URL') }}"
         };
@@ -106,7 +165,7 @@
                 $(".chat-box").append(`
                     <div class="d-flex justify-content-end mb-3">
                         <div class="bg-primary text-white p-2 rounded-3 shadow-sm">
-                            ${message.content}
+                            ${formatMessage(message.content, 'agent')}
                         </div>
                     </div>
                 `);
@@ -114,7 +173,7 @@
                 $(".chat-box").append(`
                     <div class="d-flex mb-3">
                         <div class="bg-light p-2 rounded-3 shadow-sm">
-                            ${message.content}
+                            ${formatMessage(message.content, 'user')}
                         </div>
                     </div>
                 `);
@@ -124,6 +183,7 @@
             $(".chat-box").scrollTop($(".chat-box")[0].scrollHeight);
         });
     </script>
+
     <script>
         $(document).ready(function() {
             const typingRef = database.ref('sessions/' + sessionId + '/typing');

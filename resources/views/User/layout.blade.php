@@ -113,10 +113,50 @@
         window.createNewSession = "{{ route('user.createSession') }}";
     </script>
 
+
     <script>
         let firebaseAppInitialized = false;
         let firebaseDatabase = null;
         let firebaseListener = null;
+
+        function formatMessage(content) {
+            const maxLength = 50; // count of letters
+            if (content.length <= maxLength) {
+                return `<p>${content}</p>`;
+            }
+
+            const shortText = content.substring(0, maxLength);
+            return `
+                <p class="message-text">
+                    <span class="short-text">${shortText}</span>
+                    <span class="full-text d-none">${content}</span>
+                </p>
+                <a href="#" class="toggle-more text-primary">عرض المزيد</a>
+            `;
+        }
+
+        function appendMessage(sender, content) {
+            const formatted = formatMessage(content);
+            const messageClass = sender === 'user' ? 'chat-message user' : 'chat-message';
+            $("#chatBody").append(`
+                <div class="${messageClass}">
+                    ${formatted}
+                </div>
+            `);
+
+            $("#chatBody").scrollTop($("#chatBody")[0].scrollHeight);
+        }
+
+        $(document).on("click", ".toggle-more", function(e) {
+            e.preventDefault();
+            const message = $(this).prev(".message-text");
+            message.find(".short-text, .full-text").toggleClass("d-none");
+            if ($(this).text() === "عرض المزيد") {
+                $(this).text("عرض أقل");
+            } else {
+                $(this).text("عرض المزيد");
+            }
+        });
 
         $(document).on("click", ".session-item, .topic-item[data-final='1']", function() {
             currentSessionId = $(this).data("id");
@@ -147,20 +187,10 @@
                 console.log("🔥 New message from Firebase:", message);
 
                 // متضيفش الرسائل اللي أرسلها نفس اليوزر عشان متتكررش
-                if (message.sender === 'user') {
-                    $("#chatBody").append(`
-                        <div class="chat-message user">${message.content}</div>
-                    `);
-                } else if (message.sender === 'agent') {
-                    $("#chatBody").append(`
-                        <div class="chat-message">${message.content}</div>
-                    `);
-                }
+                appendMessage(message.sender, message.content);
 
                 $("#chatBody").scrollTop($("#chatBody")[0].scrollHeight);
             });
-
-
 
             // Listen for session
             const sessionRef = firebaseDatabase.ref('sessions/' + currentSessionId);
@@ -183,16 +213,16 @@
 
             const typingRef = firebaseDatabase.ref('sessions/' + currentSessionId + '/typing');
 
-            $("input[name='message']").on("input", function(){
+            $("input[name='message']").on("input", function() {
                 typingRef.set({
-                    user_typing : true,
+                    user_typing: true,
                 });
 
                 // نوقف الحالة بعد ثانيتين من التوقف عن الكتابة
                 clearTimeout(window.typingTimeout);
                 window.typingTimeout = setTimeout(() => {
                     typingRef.set({
-                        user_typing : false,
+                        user_typing: false,
                     });
                 }, 2000);
             });
@@ -217,5 +247,4 @@
         });
     </script>
 </body>
-
 </html>

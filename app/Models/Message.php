@@ -13,6 +13,7 @@ class Message extends Model
         'seen'        => 'boolean',
         'is_starred'  => 'boolean',
         'is_pinned'   => 'boolean',
+        'is_long'     => 'boolean',
     ];
 
     public function sessionChat()

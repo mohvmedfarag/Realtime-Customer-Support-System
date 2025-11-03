@@ -4,9 +4,11 @@ namespace App\Providers;
 
 use App\Models\User;
 use App\Models\Agent;
+use App\Models\Message;
 use App\Models\SessionChat;
 use App\Observers\UserObserver;
 use App\Observers\AgentObserver;
+use App\Observers\MessageObserver;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -30,6 +32,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Agent::observe(AgentObserver::class);
         User::observe(UserObserver::class);
+        Message::observe(MessageObserver::class);
 
         Relation::morphMap([
             'user' => 'App\Models\User',
