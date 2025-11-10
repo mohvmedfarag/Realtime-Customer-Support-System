@@ -43,7 +43,8 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer('Agent.layout', function ($view) {
         $agent = Auth::guard('agent')->user();
-        $sessionsCount = SessionChat::where('status', 'waiting_agent')->count();
+        $sessionsCount = SessionChat::where('status', 'waiting_agent')
+        ->where('agent_id', null)->count();
 
         $activeSession = null;
         if ($agent) {

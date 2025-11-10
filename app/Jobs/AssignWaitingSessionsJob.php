@@ -29,17 +29,17 @@ class AssignWaitingSessionsJob implements ShouldQueue
     public function handle(): void
     {
 
-        $agent = Agent::where('status', 'online')->first();
+        // $agent = Agent::where('status', 'online')->first();
 
-        if ($agent) {
-            $this->session->update([
-                'status' => 'in_agent',
-                'agent_id' => $agent->id,
-            ]);
+        // if ($agent) {
+        //     $this->session->update([
+        //         'status' => 'in_agent',
+        //         'agent_id' => $agent->id,
+        //     ]);
 
-            $agent->update([
-                'status' => 'busy'
-            ]);
-        }
+        //     $agent->update([
+        //         'status' => 'busy'
+        //     ]);
+        // }
     }
 }

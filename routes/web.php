@@ -5,12 +5,13 @@ use Illuminate\Support\Facades\Route;
 use Kreait\Firebase\Exception\FirebaseException;
 use App\Http\Controllers\Web\User\ChatController;
 use App\Http\Controllers\Web\Auth\LoginController;
-use App\Http\Controllers\Web\User\Dashboard\DashboardController;
+use App\Http\Controllers\Web\User\RatingController;
 use App\Http\Controllers\Web\User\MessageController;
 use App\Http\Controllers\Web\User\SessionController;
-use App\Http\Controllers\Web\User\MessageReactionController;
-use App\Http\Controllers\Web\User\RatingController;
 use App\Http\Controllers\Web\User\StarMessageController;
+use App\Http\Controllers\Web\Agent\AgentSessionController;
+use App\Http\Controllers\Web\User\MessageReactionController;
+use App\Http\Controllers\Web\User\Dashboard\DashboardController;
 use App\Http\Controllers\Web\Agent\DashboardController as AgentDashboardController;
 
 require __Dir__ . '/dashboard.php';
@@ -32,17 +33,44 @@ Route::controller(DashboardController::class)->group(function(){
         Route::post('chat-sessions/create-from-topic', 'createSessionFromTopic')->name('createSessionFromTopic');
         Route::post('chat-sessions/create', 'createSession')->name('user.createSession');
         Route::post('chat/session/send', 'sendMessageByUser')->name('user.sendMessage');
+        Route::post('chat/{session}/close', 'closeChat')->name('user.chat.close');
     });
 });
 
 Route::controller(AgentDashboardController::class)->group(function(){
     Route::middleware('auth:agent')->group(function(){
         Route::get('agent/dashboard', 'index')->name('agent.dashboard');
-        Route::get('agent/sessions/show', 'showWaitingSessions')->name('agent.sessions.show');
+        // Route::get('agent/sessions/show', 'showWaitingSessions')->name('agent.sessions.show');
         Route::get('agent/sessions/{session}/join', 'joinWaitingSessions')->name('agent.sessions.join');
         Route::post('agent/session/send', 'sendMessageByAgent')->name('agent.sendMessage');
     });
 });
+
+Route::controller(AgentSessionController::class)->group(function(){
+    Route::post('agent/sessions/{session}/transfer','transfer')->name('agent.sessions.transfer');
+    Route::post('agent/sessions/{session}/transfer-to-agent','transferToAgent')->name('agent.sessions.transferToAgent');
+    Route::get('agent/my-waiting-sessions', 'myWaitingSessions')->name('agent.myWaitingSessions');
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Route::controller(ChatController::class)->group(function(){
 

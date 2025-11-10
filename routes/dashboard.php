@@ -24,6 +24,9 @@ Route::group(['prefix' => 'dashboard', 'as' => 'dashboard.'], function(){
 
         Route::controller(SessionController::class)->group(function(){
             Route::get('sessions', 'index')->name('sessions');
+            Route::get('waiting-sessions', 'showWaitingSessions')->name('showWaitingSessions');
+            Route::post('transfer-session', 'transferSessionToAgent')->name('transferSessionToAgent');
+            Route::get('active-sessions', 'showActiveSessions')->name('showActiveSessions');
         });
 
         Route::controller(AgentController::class)->group(function(){

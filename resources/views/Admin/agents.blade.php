@@ -11,6 +11,7 @@
                     <th scope="col">#</th>
                     <th scope="col">ID</th>
                     <th scope="col">Name</th>
+                    <th scope="col">Email</th>
                     <th scope="col">Status</th>
                     <th scope="col">Show</th>
                     <th scope="col">Record</th>
@@ -22,6 +23,7 @@
                         <th scope="row">{{ $loop->iteration }}</th>
                         <td>{{ $agent->id }}</td>
                         <td>{{ $agent->name }}</td>
+                        <td>{{ $agent->email }}</td>
                         <td>{{ $agent->status }}</td>
                         <td><a href="{{ route('dashboard.agents.show', $agent->id) }}"><i class="fa-solid fa-eye fa-lg" style="cursor: pointer"></i></a></td>
                         <td>

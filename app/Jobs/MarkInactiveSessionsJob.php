@@ -30,13 +30,13 @@ class MarkInactiveSessionsJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $session = SessionChat::find($this->sessionId);
-        if (! $session) {
-            return;
-        }
+        // $session = SessionChat::find($this->sessionId);
+        // if (! $session) {
+        //     return;
+        // }
 
-        if ($session->isExpired($this->minutes)) {
-            $session->markInactive();
-        }
+        // if ($session->isExpired($this->minutes)) {
+        //     $session->markInactive();
+        // }
     }
 }

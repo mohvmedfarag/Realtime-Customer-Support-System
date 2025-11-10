@@ -16,29 +16,38 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         // User::create([
-        //     'name' => 'Ahmed',
-        //     'email' => 'ahmed@gmail.com',
+        //     'name' => 'omar',
+        //     'email' => 'omar@gmail.com',
         //     'password' => bcrypt('password'),
         // ]);
 
         // Agent::create([
-        //     'name' => 'Agent',
-        //     'email' => 'agent@estbn.com',
+        //     'name' => 'Agent Mohamed',
+        //     'email' => 'agent3@estbn.com',
         //     'password' => bcrypt('password'),
-        //     'status' => 'offline',
+        //     'status' => 'online',
         // ]);
 
         // Agent::create([
-        //     'name' => 'Agent 2',
-        //     'email' => 'agent2@estbn.com',
+        //     'name' => 'Agent Kareem',
+        //     'email' => 'agent4@estbn.com',
         //     'password' => bcrypt('password'),
-        //     'status' => 'offline',
+        //     'status' => 'online',
         // ]);
 
-        // Admin::create([
-        //     'name' => 'Kareem',
-        //     'email' => 'kareem@estbn.com',
+        // Agent::create([
+        //     'name' => 'Agent Amr',
+        //     'email' => 'agent5@estbn.com',
         //     'password' => bcrypt('password'),
+        //     'status' => 'online',
+        // ]);
+
+        // Agent::create([
+        //     'name' => 'Agent Waleed',
+        //     'email' => 'agent7@estbn.com',
+        //     'password' => bcrypt('password'),
+        //     'status' => 'online',
+        //     'department_id' => 7,
         // ]);
     }
 }

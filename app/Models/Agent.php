@@ -56,4 +56,8 @@ class Agent extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function quick_responses(){
+        return $this->hasMany(QuickResponse::class, 'agent_id', 'id');
+    }
 }

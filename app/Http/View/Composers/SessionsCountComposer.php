@@ -9,7 +9,8 @@ class SessionsCountComposer
 {
     public function compose(View $view)
     {
-        $sessionsCount = SessionChat::where('status', 'waiting_agent')->count();
+        $sessionsCount = SessionChat::where('status', 'waiting_agent')
+        ->where('agent_id', null)->count();
         $view->with('sessionsCount', $sessionsCount);
     }
 }

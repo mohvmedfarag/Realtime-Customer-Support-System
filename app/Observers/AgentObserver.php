@@ -21,24 +21,24 @@ class AgentObserver
      */
     public function updated(Agent $agent): void
     {
-        if ($agent->isDirty('status') && $agent->status === 'online') {
-            $waitingSession = SessionChat::where('status', 'waiting_agent')->first();
+        // if ($agent->isDirty('status') && $agent->status === 'online') {
+        //     $waitingSession = SessionChat::where('status', 'waiting_agent')->first();
 
-            if ($waitingSession) {
-                $waitingSession->update([
-                    'status' => 'in_agent',
-                    'agent_id' => $agent->id,
-                ]);
+        //     if ($waitingSession) {
+        //         $waitingSession->update([
+        //             'status' => 'in_agent',
+        //             'agent_id' => $agent->id,
+        //         ]);
 
-                Http::put("https://chatbot-4e187-default-rtdb.europe-west1.firebasedatabase.app/sessions/{$waitingSession->uuid}.json", [
-                    'uuid' => $waitingSession->uuid,
-                    'status' => $waitingSession->status,
-                    'agent_id' => $agent->id,
-                ]);
+        //         Http::put("https://chatbot-4e187-default-rtdb.europe-west1.firebasedatabase.app/sessions/{$waitingSession->uuid}.json", [
+        //             'uuid' => $waitingSession->uuid,
+        //             'status' => $waitingSession->status,
+        //             'agent_id' => $agent->id,
+        //         ]);
 
-                $agent->updateQuietly(['status' => 'busy']);
-            }
-        }
+        //         $agent->updateQuietly(['status' => 'busy']);
+        //     }
+        // }
     }
 
     /**

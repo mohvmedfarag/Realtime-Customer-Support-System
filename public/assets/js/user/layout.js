@@ -38,17 +38,23 @@ $(document).on("click", ".topic-item", function () {
                 topic_id: topicId,
                 topic_name: topicName
             },
-            success: function () {
+            success: function (response) {
+                $('#endChatBtn').removeClass('d-none');
                 $("#topicsSection").fadeOut(300, function () {
                     // إظهار الشات بعد الإخفاء
                     $("#chatBody").removeClass("d-none").html(`
                                 <div class="chat-message">تم إنشاء جلسة جديدة بعنوان: <b>${topicName}</b></div>
                             `);
+                    $("#chatBody").data("session-id", response.session.id);
                     $("#chatFooter").removeClass("d-none").hide().fadeIn(
                         300);
                 });
             },
             error: function (xhr) {
+                if (xhr.status === 403 && xhr.responseJSON.error) {
+                    alert(xhr.responseJSON.error);
+                }
+
                 alert(xhr.responseJSON?.error || "حدث خطأ أثناء إنشاء الجلسة");
             }
         });
@@ -116,8 +122,9 @@ $(document).on("click", ".topic-item", function () {
         $.ajax({
             url: `/messages/${sessionId}/show`,
             method: "GET",
-            success: function (messages) {
-                if (messages.length === 0) {
+            success: function (response) {
+                $('#endChatBtn').removeClass('d-none');
+                if (response.messages.length === 0) {
                     $("#chatBody").html(`
                         <div class="chat-message text-muted">لا توجد رسائل في هذه الجلسة.</div>
                     `);
@@ -129,7 +136,7 @@ $(document).on("click", ".topic-item", function () {
                         المحادثة السابقة (${sessionName})
                     </div>`;
 
-                messages.forEach(msg => {
+                response.messages.forEach(msg => {
                     const isLong = msg.is_long; // من الداتا بيز
                     let contentHTML = msg.content;
 
@@ -159,10 +166,14 @@ $(document).on("click", ".topic-item", function () {
                 });
 
 
-                $("#chatBody").html(chatHTML);
+                $("#chatBody").html(chatHTML).data("session-id", response.session.id);
                 $("#chatBody").scrollTop($("#chatBody")[0].scrollHeight);
             },
-            error: function () {
+            error: function (xhr) {
+                if (xhr.status === 403 && xhr.responseJSON.error) {
+                    alert(xhr.responseJSON.error);
+                }
+
                 $("#chatBody").html(`
                     <div class="chat-message text-danger">حدث خطأ أثناء تحميل الرسائل.</div>
                 `);
@@ -188,7 +199,7 @@ $(document).on("click", ".show-more-btn", function () {
 });
 
 
-// إنشاء جلسة جديدة يدويًا
+// إنشاء جلسة جديدة يدويًا3️⃣
 $("#session-form").on("submit", function (e) {
     e.preventDefault();
 
@@ -206,17 +217,22 @@ $("#session-form").on("submit", function (e) {
             name: sessionName
         },
         success: function (response) {
+            $('#endChatBtn').removeClass('d-none');
             // إخفاء المواضيع
             $("#topicsSection").fadeOut(300, function () {
                 // عرض الشات بعد الإخفاء
                 $("#chatBody").removeClass("d-none").html(`
                         <div class="chat-message">تم إنشاء جلسة جديدة بعنوان: <b>${response.session.name}</b></div>
-                    `);
+                `);
+                $("#chatBody").data("session-id", response.session.id);
                 $("#chatFooter").removeClass("d-none").hide().fadeIn(300);
             });
+
         },
         error: function (xhr) {
-            if (xhr.status === 409) {
+            if (xhr.status === 403 && xhr.responseJSON.error) {
+                alert(xhr.responseJSON.error);
+            } else if (xhr.status === 409) {
                 // المستخدم لديه جلسة بنفس الاسم — نفتح القديمة
                 const sessionId = xhr.responseJSON.session_id;
                 $("#topicsSection").fadeOut(300, function () {
@@ -275,7 +291,7 @@ document.addEventListener("DOMContentLoaded", function () {
         chatBody.classList.add('expanded');
         topicsList.classList.add('expanded');
 
-        topicItems.forEach( item => {
+        topicItems.forEach(item => {
             item.classList.add('expanded');
         });
         minimizeBtn.classList.remove("d-none");
@@ -285,7 +301,7 @@ document.addEventListener("DOMContentLoaded", function () {
         chatPopup.classList.remove("expanded");
         topicsSection.classList.remove("expanded");
         topicsList.classList.remove("expanded");
-        topicItems.forEach( item => {
+        topicItems.forEach(item => {
             item.classList.remove('expanded');
         });
         chatBody.classList.remove('expanded');

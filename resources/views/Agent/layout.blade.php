@@ -98,7 +98,19 @@
             <a href="{{ route('agent.dashboard') }}"
                 class="{{ request()->routeIs('agent.dashboard') ? 'active' : '' }}">Dashboard</a>
 
-            <a href="{{ route('agent.sessions.show') }}"
+            <a href="{{ route('agent.myWaitingSessions') }}"
+            class="{{ request()->routeIs('agent.myWaitingSessions') ? 'active' : '' }}" style="display: flex;">
+                <div>My Waiting Sessions</div>
+                <div style="position:relative; margin-left: 5px;">
+                    <i class="fa-solid fa-comments fa-lg"></i>
+                    <span id="waiting_count"
+                        style="font-size: 12px; background-color: red; padding: 0px 5px; border-radius: 50%; position: absolute; top: -6px; right: -5px;">
+                        0
+                    </span>
+                </div>
+            </a>
+
+            {{-- <a href="{{ route('agent.sessions.show') }}"
                 class="{{ request()->routeIs('agent.sessions.show') ? 'active' : '' }}" style="display: flex;">
                 <div>
                     Waiting Sessions
@@ -108,7 +120,7 @@
                     <span
                         style="font-size: 12px; background-color: #ffc107; padding: 0px 5px; border-radius: 50%; position: absolute; top: -6px; right: -5px; color:#343a40;">{{ $sessionsCount }}</span>
                 </div>
-            </a>
+            </a> --}}
 
             <!-- My Active Sessions -->
             @if ($activeSession)
@@ -124,7 +136,7 @@
                 </a>
             @else
                 <a href="javascript:void(0)" class="disabled" style="display: flex; opacity: 0.6; cursor: not-allowed;">
-                    <div>My Active Sessions</div>
+                    <div>My Active Session</div>
                     <div style="position:relative; margin-left: 5px;">
                         <i class="fa-solid fa-comments fa-lg"></i>
                         <span
@@ -135,10 +147,12 @@
                 </a>
             @endif
 
+            <a href="#"
+                class="">Quick Questions</a>
 
             <a href="javascript:void(0)" onclick="document.getElementById('agent-logout').submit()"
                 class="">Logout</a>
-            <form action="" method="post" id="agent-logout">@csrf</form>
+            <form action="{{ route('agent.logout') }}" method="post" id="agent-logout">@csrf</form>
         </div>
     </div>
 
@@ -159,6 +173,39 @@
             sidebar.classList.toggle('collapsed');
         });
     </script>
+
+    {{-- listen to my waiting sessions count --}}
+    <script>
+        const firebaseConfig = {
+            databaseURL: "{{ env('FIREBASE_DATABASE_URL') }}"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+
+        const database = firebase.database();
+        const sessionsRef = database.ref('sessions');
+
+        const currentAgentId = "{{ Auth::guard('agent')->user()->id ?? '' }}";
+
+        sessionsRef.on('value', (snapshot) => {
+            let waitingCount = 0;
+
+            snapshot.forEach((child) => {
+                const data = child.val();
+                if (data.agent_id == currentAgentId && data.status === 'waiting_agent') {
+                    waitingCount++;
+                }
+            });
+
+            document.getElementById('waiting_count').textContent = waitingCount;
+            console.log("Waiting sessions:", waitingCount);
+        });
+    </script>
+
+
+
     @yield('scripts')
 </body>
 

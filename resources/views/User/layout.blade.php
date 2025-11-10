@@ -28,6 +28,9 @@
                 <h6 style="margin: 0">خدمة العملاء</h6>
             </div>
             <div>
+                <button id="endChatBtn" class="btn btn-danger btn-sm d-none" style="margin-right:10px;">
+                    إنهاء المحادثة
+                </button>
                 <i class="fa-solid fa-up-right-and-down-left-from-center" id="expandChat"
                     style="cursor:pointer; margin-right:10px;"></i>
                 <i class="fa-solid fa-down-left-and-up-right-to-center d-none" id="minimizeChat"
@@ -122,7 +125,7 @@
         function formatMessage(content) {
             const maxLength = 50; // count of letters
             if (content.length <= maxLength) {
-                return `<p>${content}</p>`;
+                return `<p style="margin:0;">${content}</p>`;
             }
 
             const shortText = content.substring(0, maxLength);
@@ -232,6 +235,13 @@
             typingRef.on('value', (snapshot) => {
                 const data = snapshot.val();
 
+                if (!data || typeof data.agent_typing === 'undefined') {
+                    typingIndicator.style.display = "none";
+                    typingSound.pause();
+                    typingSound.currentTime = 0;
+                    return;
+                }
+
                 if (data.agent_typing === true) {
                     typingIndicator.innerText = "يكتب الآن...";
                     typingIndicator.style.display = "block";
@@ -246,5 +256,40 @@
             });
         });
     </script>
+
+    <script>
+        $(document).on('click', '#endChatBtn', function() {
+            if (!confirm('هل أنت متأكد أنك تريد إنهاء المحادثة؟')) return;
+
+            // نجيب رقم الجلسة المفتوحة حالياً
+            let sessionId = $('#chatBody').data('session-id');
+            if (!sessionId) {
+                alert('لا توجد جلسة مفتوحة حالياً.');
+                return;
+            }
+
+            $.ajax({
+                url: `/chat/${sessionId}/close`,
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(response) {
+                    $(".chat-header h6").html(`<small>خدمة العملاء</small>`);
+                    $('#endChatBtn').addClass('d-none');
+                    $('#chatBody').html(
+                        '<p class="text-center text-muted">This chat has ended</p>');
+                    $('#chatFooter').addClass('d-none');
+
+                    alert(response.message);
+                },
+                error: function(xhr) {
+                    alert('حدث خطأ أثناء إنهاء الجلسة.');
+                }
+            });
+        });
+    </script>
+
 </body>
+
 </html>

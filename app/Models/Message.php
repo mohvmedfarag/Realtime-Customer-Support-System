@@ -49,4 +49,24 @@ class Message extends Model
     {
         return $this->hasMany(MessageReaction::class, 'message_id', 'id');
     }
+
+    public function senderAgent()
+    {
+        return $this->belongsTo(Agent::class, 'sender_id');
+    }
+
+    public function senderUser()
+    {
+        return $this->belongsTo(User::class, 'sender_id');
+    }
+
+    public function receiverAgent()
+    {
+        return $this->belongsTo(Agent::class, 'receiver_id');
+    }
+
+    public function receiverUser()
+    {
+        return $this->belongsTo(User::class, 'receiver_id');
+    }
 }

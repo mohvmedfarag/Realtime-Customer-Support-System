@@ -35,7 +35,46 @@
                     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                         <h6 class="mb-0">Chat with <strong>{{ $user->name }}</strong></h6>
                         @if ($session->status === 'in_agent')
-                            <span class="badge bg-success">Active</span>
+                            <div class="d-flex">
+                                <div class="dropdown" style="margin-right: 10px;">
+                                    <a href="#" class="text-white" style="text-decoration: none; font-weight:bold"
+                                        id="transferDropdown_agents" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Agents
+                                    </a>
+                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="transferDropdown_agents">
+                                        @foreach ($agents as $agent)
+                                            <li>
+                                                <a href="#" class="dropdown-item transfer-session-agent"
+                                                    data-agent="{{ $agent->id }}">
+                                                    <i class="fa-solid fa-headset"></i>
+                                                    {{ $agent->name }}
+                                                    ({{ $agent->department->name }})
+                                                </a>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+
+                                <div class="dropdown" style="margin-right: 10px;">
+                                    <a href="#" class="text-white" style="text-decoration: none; font-weight:bold"
+                                        id="transferDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Departments
+                                    </a>
+                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="transferDropdown">
+                                        @foreach ($departments as $dep)
+                                            <li>
+                                                <a href="#" class="dropdown-item transfer-session"
+                                                    data-dep="{{ $dep->id }}">
+                                                    <i class="fa-solid fa-building me-2 text-primary"></i>
+                                                    {{ $dep->name }}
+                                                </a>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+
+                                <span class="badge bg-success">Active</span>
+                            </div>
                         @endif
                         @if ($session->status === 'waiting_agent')
                             <span class="badge bg-warning">Waiting</span>
@@ -52,7 +91,8 @@
                                                 <span class="short-text">{{ Str::limit($msg->content, 50, '') }}</span>
                                                 <span class="full-text d-none">{{ $msg->content }}</span>
                                             </p>
-                                            <a href="#" class="toggle-more text-decoration-none text-primary small">عرض المزيد</a>
+                                            <a href="#"
+                                                class="toggle-more text-decoration-none text-primary small">عرض المزيد</a>
                                         @else
                                             {{ $msg->content }}
                                         @endif
@@ -100,6 +140,10 @@
 
 @section('scripts')
     <script>
+        const sessionId = "{{ $session->id }}"; // تعريف واحد فقط في الأعلى
+    </script>
+
+    <script>
         function formatMessage(content, sender) {
             const maxLength = 50; // الحد الأقصى لعدد الأحرف قبل "عرض المزيد"
             if (content.length <= maxLength) {
@@ -139,13 +183,7 @@
                 $(this).text("عرض المزيد");
             }
         });
-        const firebaseConfig = {
-            databaseURL: "{{ env('FIREBASE_DATABASE_URL') }}"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
 
-        const sessionId = "{{ $session->id }}";
         const messagesRef = database.ref('chats/' + sessionId + '/messages');
 
         let existingMessages = @json($messages->pluck('firebase_id')->filter()->values());
@@ -184,6 +222,7 @@
         });
     </script>
 
+    {{-- Stop Typing when agent send message --}}
     <script>
         $(document).ready(function() {
             const typingRef = database.ref('sessions/' + sessionId + '/typing');
@@ -219,6 +258,8 @@
             });
         });
     </script>
+
+    {{-- Typing --}}
     <script>
         const typingRef = database.ref('sessions/{{ $session->id }}/typing');
 
@@ -239,11 +280,80 @@
         typingIndicator = document.getElementById('typingIndicator');
         typingRef.on("value", (snapshot) => {
             const data = snapshot.val();
+
+            if (!data) {
+                typingIndicator.style.display = "none";
+                return;
+            }
+
             if (data.user_typing === true) {
                 typingIndicator.innerText = "يكتب الآن...";
                 typingIndicator.style.display = "block";
             } else {
                 typingIndicator.style.display = "none";
+            }
+        });
+    </script>
+
+    {{-- Transfer Session --}}
+    <script>
+        $(document).on('click', '.transfer-session', function(e) {
+            e.preventDefault();
+
+            const departmentId = $(this).data('dep');
+
+            if (!confirm("هل أنت متأكد من تحويل هذه الجلسة؟")) return;
+
+            $.ajax({
+                url: `/agent/sessions/${sessionId}/transfer`,
+                method: "POST",
+                data: {
+                    _token: "{{ csrf_token() }}",
+                    department_id: departmentId
+                },
+                success: function(res) {
+                    alert(res.success);
+                    window.location.href = "{{ route('agent.dashboard') }}";
+                },
+                error: function(err) {
+                    alert(err.responseJSON?.error || "حدث خطأ أثناء تحويل الجلسة");
+                }
+            });
+        });
+
+        $(document).on('click', '.transfer-session-agent', function(e) {
+            const agentId = $(this).data('agent');
+
+            if (!confirm("هل أنت متأكد من تحويل هذه الجلسة؟")) return;
+
+            $.ajax({
+                url: `/agent/sessions/${sessionId}/transfer-to-agent`,
+                method: "POST",
+                data: {
+                    _token: "{{ csrf_token() }}",
+                    agent_id: agentId
+                },
+                success: function(res) {
+                    alert(res.success);
+                    window.location.href = "{{ route('agent.dashboard') }}";
+                },
+                error: function(err) {
+                    alert(err.responseJSON?.error || "حدث خطأ أثناء تحويل الجلسة");
+                }
+            });
+        });
+    </script>
+
+    <script>
+        sessionRef = database.ref('sessions/' + sessionId);
+        sessionRef.on("value", (snapshot) => {
+            const sessionData = snapshot.val();
+
+            if (!sessionData) return;
+
+            if (sessionData.status === "closed") {
+                alert('قام العميل باغلاق الجلسة');
+                window.location.href = "{{ route('agent.myWaitingSessions') }}";
             }
         });
     </script>

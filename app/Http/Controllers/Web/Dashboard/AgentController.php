@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 class AgentController extends Controller
 {
     public function index(){
-        $agents = Agent::select('id', 'name', 'status')->get();
+        $agents = Agent::select('id', 'name', 'email', 'status')->get();
         return view('Admin.agents', compact('agents'));
     }
 

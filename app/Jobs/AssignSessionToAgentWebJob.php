@@ -29,26 +29,26 @@ class AssignSessionToAgentWebJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $agent = Agent::where('status', 'online')->first();
+        // $agent = Agent::where('status', 'online')->first();
 
-        if ($agent) {
-            $this->session->agent_id = $agent->id;
-            $this->session->status = 'in_agent';
-            $this->session->last_agent_activity = null;
-            $this->session->save();
+        // if ($agent) {
+        //     $this->session->agent_id = $agent->id;
+        //     $this->session->status = 'in_agent';
+        //     $this->session->last_agent_activity = null;
+        //     $this->session->save();
 
-            $agent->status = 'busy';
-            $agent->save();
+        //     $agent->status = 'busy';
+        //     $agent->save();
 
-            Http::put("https://chatbot-4e187-default-rtdb.europe-west1.firebasedatabase.app/sessions/{$this->session->uuid}.json", [
-                'uuid' => $this->session->uuid,
-                'status' => $this->session->status,
-                'agent_id' => $this->session->agent_id,
-                'agent_name' => $this->session->agent->name,
-                'user_id' => $this->session->chat->user_id,
-            ]);
+        //     Http::put("https://chatbot-4e187-default-rtdb.europe-west1.firebasedatabase.app/sessions/{$this->session->uuid}.json", [
+        //         'uuid' => $this->session->uuid,
+        //         'status' => $this->session->status,
+        //         'agent_id' => $this->session->agent_id,
+        //         'agent_name' => $this->session->agent->name,
+        //         'user_id' => $this->session->chat->user_id,
+        //     ]);
 
-            // CheckAgentInactivityJob::dispatch($this->session)->delay(now()->addSeconds(30));
-        }
+        // CheckAgentInactivityJob::dispatch($this->session)->delay(now()->addSeconds(30));
     }
 }
+
