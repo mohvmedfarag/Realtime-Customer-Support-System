@@ -123,11 +123,12 @@ $(document).on("click", ".topic-item", function () {
             url: `/messages/${sessionId}/show`,
             method: "GET",
             success: function (response) {
+                console.log("🔍 Current session ID:", response.session.id);
                 $('#endChatBtn').removeClass('d-none');
                 if (response.messages.length === 0) {
                     $("#chatBody").html(`
                         <div class="chat-message text-muted">لا توجد رسائل في هذه الجلسة.</div>
-                    `);
+                    `).data("session-id", response.session.id);
                     return;
                 }
 
@@ -164,7 +165,6 @@ $(document).on("click", ".topic-item", function () {
                         `;
                     }
                 });
-
 
                 $("#chatBody").html(chatHTML).data("session-id", response.session.id);
                 $("#chatBody").scrollTop($("#chatBody")[0].scrollHeight);

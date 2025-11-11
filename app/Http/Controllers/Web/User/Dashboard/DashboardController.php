@@ -68,7 +68,23 @@ class DashboardController extends Controller
             $existingSession->update([
                 'status' => 'waiting_agent',
                 'agent_id' => $randomAgent->id,
+                'waiting_started_at' => now(),
             ]);
+
+            //////////////////////////////////
+            $database = $this->getFirebaseDatabase();
+            $database->getReference("sessions/{$existingSession->id}")
+                ->set([
+                    'id'         => $existingSession->id,
+                    'name'       => $existingSession->name,
+                    'status'     => $existingSession->status,
+                    'user_name'  => $user->name,
+                    'user_id'    => $user->id,
+                    'agent_name' => $randomAgent->name,
+                    'agent_id'   => $randomAgent->id,
+                    'created_at' => now()->toDateTimeString(),
+                ]);
+
             $messages = $existingSession->messages()->oldest()->get();
             return response()->json([
                 'messages' => $messages,
@@ -81,7 +97,21 @@ class DashboardController extends Controller
             'name' => $topic->title,
             'status' => 'waiting_agent',
             'agent_id' => $randomAgent->id,
+            'waiting_started_at' => now(),
         ]);
+
+        $database = $this->getFirebaseDatabase();
+        $database->getReference("sessions/{$session->id}")
+            ->set([
+                'id'         => $session->id,
+                'name'       => $session->name,
+                'status'     => $session->status,
+                'user_name'  => $user->name,
+                'user_id'    => $user->id,
+                'agent_name' => $randomAgent->name,
+                'agent_id'   => $randomAgent->id,
+                'created_at' => now()->toDateTimeString(),
+            ]);
 
         $messages = $session->messages()->oldest()->get();
 
@@ -94,7 +124,6 @@ class DashboardController extends Controller
     public function getMessages(SessionChat $session)
     {
         $user = Auth::user();
-        $randomAgent = Agent::where('status', 'online')->inRandomOrder()->first();
 
         if ($session->status === 'in_agent') {
             $messages = $session->messages()->oldest()->get();
@@ -115,6 +144,7 @@ class DashboardController extends Controller
             ], 403);
         }
 
+        $randomAgent = Agent::where('status', 'online')->inRandomOrder()->first();
         if (!$randomAgent && $session->status !== 'in_agent') {
             return response()->json([
                 'error' => 'No agents available at the moment. Please try again later.'
@@ -124,6 +154,7 @@ class DashboardController extends Controller
         $session->update([
             'status' => 'waiting_agent',
             'agent_id' => $randomAgent->id,
+            'waiting_started_at' => now(),
         ]);
 
         $database = $this->getFirebaseDatabase();
@@ -133,6 +164,7 @@ class DashboardController extends Controller
                 'name'       => $session->name,
                 'status'     => $session->status,
                 'user_name'  => $user->name,
+                'user_id'    => $user->id,
                 'agent_name' => $randomAgent->name,
                 'agent_id'   => $randomAgent->id,
                 'created_at' => now()->toDateTimeString(),
@@ -176,6 +208,7 @@ class DashboardController extends Controller
             'name'   => $request->name,
             'status' => 'waiting_agent',
             'agent_id' => $randomAgent->id,
+            'waiting_started_at' => now(),
         ]);
 
         $database = $this->getFirebaseDatabase();
@@ -185,15 +218,11 @@ class DashboardController extends Controller
                 'name'       => $session->name,
                 'status'     => $session->status,
                 'user_name'  => $user->name,
+                'user_id'    => $user->id,
                 'agent_name' => $randomAgent->name,
                 'agent_id'   => $randomAgent->id,
                 'created_at' => now()->toDateTimeString(),
             ]);
-
-        $session->messages()->create([
-            'sender'  => 'user',
-            'content' => "موضوع المحادثة: " . $session->name,
-        ]);
 
         return response()->json([
             'message' => 'تم إنشاء الجلسة بنجاح',
@@ -225,10 +254,13 @@ class DashboardController extends Controller
             'content' => $message->content,
             'created_at' => $message->created_at->toDateTimeString(),
             'sender_name' => Auth::user()->name,
+            'sender_id' => Auth::user()->id,
+            'receiver_name' => $session->agent->name ?? null,
+            'receiver_id' => $session->agent_id ?? null,
         ];
 
-        $ref = "chats/{$session->id}/messages";
-        $firebaseRecord = $database->getReference($ref)->push($firebaseMessage);
+        $ref = "chats/{$session->id}/messages/{$message->id}";
+        $firebaseRecord = $database->getReference($ref)->set($firebaseMessage);
 
         $message->update(['firebase_id' => $firebaseRecord->getKey()]);
 
@@ -244,6 +276,7 @@ class DashboardController extends Controller
             $session->update([
                 'status' => 'closed',
                 'agent_id' => null,
+                'waiting_started_at' => null,
             ]);
 
             $database = $this->getFirebaseDatabase();

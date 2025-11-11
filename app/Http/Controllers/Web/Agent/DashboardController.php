@@ -17,18 +17,12 @@ class DashboardController extends Controller
         return view('Agent.dashboard');
     }
 
-    public function showWaitingSessions()
-    {
-        $sessions = SessionChat::where('status', 'waiting_agent')
-        ->where('agent_id', null)->get();
-        return view('Agent.sessions', compact('sessions'));
-    }
-
     public function joinWaitingSessions(SessionChat $session)
     {
         $agent = auth()->guard('agent')->user();
         $session->status = 'in_agent';
         $session->agent_id = $agent->id;
+        $session->waiting_started_at = null;
         $session->save();
 
         $session->messages()
@@ -75,12 +69,15 @@ class DashboardController extends Controller
             'id' => $message->id,
             'sender' => 'agent',
             'sender_name' => Auth::guard('agent')->user()->name,
+            'sender_id' => Auth::guard('agent')->user()->id,
+            'receiver_name' => $session->chat->user->name,
+            'receiver_id' => $session->chat->user_id,
             'content' => $message->content,
             'created_at' => $message->created_at->toDateTimeString(),
         ];
 
-        $ref = "chats/{$session->id}/messages";
-        $firebaseRecord = $database->getReference($ref)->push($firebaseMessage);
+        $ref = "chats/{$session->id}/messages/{$message->id}";
+        $firebaseRecord = $database->getReference($ref)->set($firebaseMessage);
 
         $message->update(['firebase_id' => $firebaseRecord->getKey()]);
 

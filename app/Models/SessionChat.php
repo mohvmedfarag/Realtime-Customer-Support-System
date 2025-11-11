@@ -13,8 +13,9 @@ class SessionChat extends Model
     public const INACTIVE_MINUTES = 5;
 
     protected $casts = [
-        'last_activity'    => 'datetime',
+        'last_activity'       => 'datetime',
         'last_agent_activity' => 'datetime',
+        'waiting_started_at'  => 'datetime',
     ];
 
     public function chat()

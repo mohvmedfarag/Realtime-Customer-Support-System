@@ -263,6 +263,7 @@
 
             // نجيب رقم الجلسة المفتوحة حالياً
             let sessionId = $('#chatBody').data('session-id');
+            console.log("🔍 Current session ID:", sessionId);
             if (!sessionId) {
                 alert('لا توجد جلسة مفتوحة حالياً.');
                 return;
@@ -277,8 +278,8 @@
                 success: function(response) {
                     $(".chat-header h6").html(`<small>خدمة العملاء</small>`);
                     $('#endChatBtn').addClass('d-none');
-                    $('#chatBody').html(
-                        '<p class="text-center text-muted">This chat has ended</p>');
+                    // $('#chatBody').html(
+                    //     '<p class="text-center text-muted">This chat has ended</p>');
                     $('#chatFooter').addClass('d-none');
 
                     alert(response.message);

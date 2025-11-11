@@ -28,6 +28,7 @@ class AgentSessionController extends Controller
             $session->update([
                 'agent_id' => $newAgent->id,
                 'status' => 'waiting_agent',
+                'waiting_started_at' => now(),
             ]);
             $database = $this->getFirebaseDatabase();
             $firebasePath = "sessions/{$session->id}";
@@ -58,6 +59,7 @@ class AgentSessionController extends Controller
             $session->update([
                 'agent_id' => $agent->id,
                 'status' => 'waiting_agent',
+                'waiting_started_at' => now(),
             ]);
             $database = $this->getFirebaseDatabase();
             $firebasePath = "sessions/{$session->id}";

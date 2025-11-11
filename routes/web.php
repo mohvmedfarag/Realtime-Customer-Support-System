@@ -40,7 +40,6 @@ Route::controller(DashboardController::class)->group(function(){
 Route::controller(AgentDashboardController::class)->group(function(){
     Route::middleware('auth:agent')->group(function(){
         Route::get('agent/dashboard', 'index')->name('agent.dashboard');
-        // Route::get('agent/sessions/show', 'showWaitingSessions')->name('agent.sessions.show');
         Route::get('agent/sessions/{session}/join', 'joinWaitingSessions')->name('agent.sessions.join');
         Route::post('agent/session/send', 'sendMessageByAgent')->name('agent.sendMessage');
     });
