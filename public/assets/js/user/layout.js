@@ -22,6 +22,24 @@ $(document).on("click", ".back-btn", function () {
     }
 });
 
+function initFirebaseListener(sessionId) {
+    if (!firebaseAppInitialized) {
+        const firebaseConfig = { databaseURL: window.firebaseDatabaseUrl };
+        firebase.initializeApp(firebaseConfig);
+        firebaseDatabase = firebase.database();
+        firebaseAppInitialized = true;
+    }
+
+    if (firebaseListener) firebaseListener.off();
+
+    firebaseListener = firebaseDatabase.ref('chats/' + sessionId + '/messages');
+    firebaseListener.on('child_added', (snapshot) => {
+        const message = snapshot.val();
+        appendMessage(message.sender, message.content);
+    });
+}
+
+
 // عند الضغط على topic أو session
 $(document).on("click", ".topic-item", function () {
     const topicId = $(this).data("id");
@@ -39,15 +57,39 @@ $(document).on("click", ".topic-item", function () {
                 topic_name: topicName
             },
             success: function (response) {
+                const newSession = response.session;
+                window.currentSessionId = newSession.id;
                 $('#endChatBtn').removeClass('d-none');
                 $("#topicsSection").fadeOut(300, function () {
                     // إظهار الشات بعد الإخفاء
                     $("#chatBody").removeClass("d-none").html(`
-                                <div class="chat-message">تم إنشاء جلسة جديدة بعنوان: <b>${topicName}</b></div>
+                                <div class="chat-message">تم إنشاء جلسة جديدة بعنوان: <b>${newSession.name}</b></div>
                             `);
-                    $("#chatBody").data("session-id", response.session.id);
+                    $("#chatBody").data("session-id", window.currentSessionId);
                     $("#chatFooter").removeClass("d-none").hide().fadeIn(
                         300);
+                });
+
+                initFirebaseListener(newSession.id);
+
+                const sessionRef = firebaseDatabase.ref('sessions/' + newSession.id);
+                sessionRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (!data) return;
+                    let header = 'خدمة العملاء';
+                    if (data.agent_name) {
+                        header = `<span style="color:#0d6efd;">${data.agent_name}</span>
+                                <small>available</small>`;
+                    }
+
+                    $(".chat-header h6").html(header);
+                    if (data.status === 'in_agent') {
+                        $(".chat-header small").text("available");
+                    } else if (data.status === 'waiting_agent') {
+                        $(".chat-header h6").html(`<small>في انتظار الرد...</small>`);
+                    } else if (data.status === 'closed') {
+                        $(".chat-header h6").html(`<span>خدمة العملاء</span>`);
+                    }
                 });
             },
             error: function (xhr) {
@@ -217,18 +259,41 @@ $("#session-form").on("submit", function (e) {
             name: sessionName
         },
         success: function (response) {
+            const newSession = response.session;
+            window.currentSessionId = newSession.id; // مهم جداً للرسائل والـ Firebase
             $('#endChatBtn').removeClass('d-none');
-            // إخفاء المواضيع
+
             $("#topicsSection").fadeOut(300, function () {
-                // عرض الشات بعد الإخفاء
                 $("#chatBody").removeClass("d-none").html(`
-                        <div class="chat-message">تم إنشاء جلسة جديدة بعنوان: <b>${response.session.name}</b></div>
+                    <div class="chat-message">تم إنشاء جلسة جديدة بعنوان: <b>${newSession.name}</b></div>
                 `);
-                $("#chatBody").data("session-id", response.session.id);
+                $("#chatBody").data("session-id", window.currentSessionId);
                 $("#chatFooter").removeClass("d-none").hide().fadeIn(300);
             });
 
+            // تهيئة Firebase Listener بعد إنشاء الجلسة
+            initFirebaseListener(newSession.id);
+
+            // استماع لحالة الجلسة في Firebase
+            const sessionRef = firebaseDatabase.ref('sessions/' + newSession.id);
+            sessionRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return;
+                let header = 'خدمة العملاء';
+                if (data.agent_name) {
+                    header = `<span style="color:#0d6efd;">${data.agent_name}</span>
+                      <small>available</small>`;
+                }
+                $(".chat-header h6").html(header);
+
+                if (data.status === 'in_agent') {
+                    $(".chat-header small").text("available");
+                } else if (data.status === 'waiting_agent') {
+                    $(".chat-header h6").html(`<small>في انتظار الرد...</small>`);
+                }
+            });
         },
+
         error: function (xhr) {
             if (xhr.status === 403 && xhr.responseJSON.error) {
                 alert(xhr.responseJSON.error);

@@ -114,6 +114,8 @@
         window.csrfToken = "{{ csrf_token() }}";
         window.createSessionFromTopicUrl = "{{ route('createSessionFromTopic') }}";
         window.createNewSession = "{{ route('user.createSession') }}";
+        window.currentSessionId = null;
+        window.firebaseDatabaseUrl = "{{ env('FIREBASE_DATABASE_URL') }}";
     </script>
 
 
