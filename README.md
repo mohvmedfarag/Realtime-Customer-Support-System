@@ -120,6 +120,20 @@ chats/
 
 ## Screenshots
 
+![Customer Chat](screenshots/welcome.png)
+![Customer Chat](screenshots/topics.png)
+![Customer Chat](screenshots/waiting-agent.png)
+![Customer Chat](screenshots/chat-user.png)
+![Customer Chat](screenshots/second-agent.png)
+![Customer Chat](screenshots/rating.png)
+![Customer Chat](screenshots/waiting-sessions-agent.png)
+![Customer Chat](screenshots/live-chat-agent.png)
+![Customer Chat](screenshots/switch-session.png)
+![Customer Chat](screenshots/waiting-sessions-admin.png)
+![Customer Chat](screenshots/active-sessions-admin.png)
+![Customer Chat](screenshots/monitoring-chat.png)
+![Customer Chat](screenshots/monitoring.png)
+
 ---
 
 ## Future Improvements
