@@ -29,16 +29,6 @@ class Agent extends Authenticatable
         return $this->hasMany(SessionChat::class, 'agent_id');
     }
 
-    public function feedbackGiven()
-    {
-        return $this->morphMany(Feedback::class, 'rater');
-    }
-
-    public function feedbackReceived()
-    {
-        return $this->morphMany(Feedback::class, 'rated');
-    }
-
     public function department()
     {
         return $this->belongsTo(Department::class, 'department_id', 'id');
@@ -55,6 +45,11 @@ class Agent extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function receivedRatings()
+    {
+        return $this->hasMany(Rating::class, 'agent_id', 'id');
     }
 
     public function quick_responses(){

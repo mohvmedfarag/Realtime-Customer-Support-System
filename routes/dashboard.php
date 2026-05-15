@@ -10,8 +10,6 @@ use Illuminate\Support\Facades\Route;
 Route::group(['prefix' => 'dashboard', 'as' => 'dashboard.'], function(){
 
     Route::controller(AdminAuthController::class)->group(function(){
-        Route::get('showRegisterForm', 'showRegisterForm');
-        Route::post('admin-register', 'register')->name('adminRegister');
         Route::get('showLoginForm', 'showLoginForm')->name('showLoginForm');
         Route::post('admin-login', 'login')->name('adminLogin');
         Route::get('logout', 'logout')->name('logout')->middleware('auth:admin');
@@ -31,6 +29,8 @@ Route::group(['prefix' => 'dashboard', 'as' => 'dashboard.'], function(){
 
         Route::controller(AgentController::class)->group(function(){
             Route::get('agents', 'index')->name('agents');
+            Route::get('agents/create', 'showCreateAgentForm')->name('agents.create');
+            Route::post('agents/create', 'store')->name('agents.store');
             Route::get('agents/{agent}', 'show')->name('agents.show');
             Route::post('agents/{agent}/update', 'update')->name('agents.update');
         });

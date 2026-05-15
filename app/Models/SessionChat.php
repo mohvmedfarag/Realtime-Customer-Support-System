@@ -70,4 +70,14 @@ class SessionChat extends Model
     {
         return $this->belongsTo(Agent::class, 'agent_id');
     }
+
+    public function sessionAgents()
+    {
+        return $this->hasMany(SessionAgent::class, 'session_id', 'id');
+    }
+
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class, 'session_id', 'id');
+    }
 }

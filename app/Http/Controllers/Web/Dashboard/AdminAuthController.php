@@ -3,52 +3,27 @@
 namespace App\Http\Controllers\Web\Dashboard;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Admin;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class AdminAuthController extends Controller
 {
-    public function showRegisterForm(){
-        return view('Admin.register');
-    }
-    public function register(Request $request){
-        $request->validate([
-            'name'  => 'required|string',
-            'email' => 'required|email',
-            'password' => 'required|confirmed'
-        ]);
-
-        $admin = Admin::where('email', $request->input('email'))->first();
-
-        if($admin){
-            return redirect()->back()->with('error', 'credentials does not match');
-        }
-
-        $admin = Admin::create([
-            'name' => $request->input('name'),
-            'email' => $request->input('email'),
-            'password' => bcrypt($request->input('password')),
-        ]);
-
-        return [
-            'admin' => $admin,
-            'message' => 'Admin Created Successful',
-        ];
-    }
-
     public function showLoginForm(){
         return view('Admin.login');
     }
 
-    public function login(Request $request){
+    public function login(Request $request)
+    {
         $request->validate([
-            'email' => 'required|email'
+            'email' => ['required', 'email'],
+            'password' => ['required','string','min:8',]
         ]);
 
-        $admin = Admin::where('email', $request->input('email'))->first();
+        $admin = Admin::where('email', $request->email)->first();
 
-        if(!$admin){
-            return redirect()->back()->with('error', 'credentials does not match');
+        if (!$admin || !Hash::check($request->password, $admin->password)) {
+            return back()->with('error', 'Credentials do not match');
         }
 
         auth()->guard('admin')->login($admin);

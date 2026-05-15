@@ -9,23 +9,17 @@ use Illuminate\Support\Facades\Auth;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
-        api: __DIR__.'/../routes/api.php',
+        // api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         channels: __DIR__.'/../routes/channels.php',
         health: '/up',
-        then: function () {
-            Route::middleware('api')
-                ->prefix('api/portal/')
-                ->group(base_path('routes/portal.php'));
-        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->redirectGuestsTo(function(){
-            if (request()->is('*/dashboard/*')) {
+        $middleware->redirectGuestsTo(function () {
+            if (request()->is('dashboard*') || request()->is('*/dashboard/*')) {
                 return route('dashboard.showLoginForm');
-            }else{
-                return route('showLoginForm');
             }
+            return route('showLoginForm');
         });
         $middleware->redirectUsersTo(function(){
             if (Auth::guard('admin')) {

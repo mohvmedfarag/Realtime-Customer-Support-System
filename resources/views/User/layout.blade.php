@@ -41,7 +41,7 @@
 
         <div class="topics-section" id="topicsSection">
             <div class="topics-list" id="topicsList">
-                {{-- المواضيع --}}
+                {{-- Topics --}}
                 @forelse ($topics as $topic)
                     <div class="topic-item" data-id="{{ $topic->id }}" data-name="{{ $topic->title }}"
                         data-final="{{ $topic->is_final }}">
@@ -51,7 +51,7 @@
                     <p>لا توجد مواضيع حالياً</p>
                 @endforelse
 
-                {{-- الجلسات السابقة --}}
+                {{-- previous sessions --}}
                 @forelse ($sessions as $session)
                     <div class="topic-item session-item" data-id="{{ $session->id }}" data-name="{{ $session->name }}">
                         {{ $session->name }}
@@ -60,7 +60,7 @@
                     <p>لا توجد جلسات حالياً</p>
                 @endforelse
 
-                {{-- إنشاء جلسة جديدة --}}
+                {{-- create new session --}}
                 <form id="session-form" class="mt-3" style="width: 100%">
                     @csrf
                     <div class="d-flex flex-row align-items-center">
@@ -73,7 +73,9 @@
 
         <div class="chat-body d-none" id="chatBody"></div>
         <small id="typingIndicator" style="display: none; color:#888; margin-left: 5px;">يكتب الان...</small>
-        <audio id="typingSound" src="{{ asset('sounds/typing.mp3') }}"></audio>
+        <audio id="typingSound" preload="auto">
+            <source src="{{ asset('sounds/typing.mp3') }}" type="audio/mpeg">
+        </audio>
         <form id="send-message">
             <div class="chat-footer d-none" id="chatFooter">
                 <input type="text" name="message" id="chatInput" placeholder="اكتب رسالتك..." />
@@ -108,6 +110,103 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        window.activeSession = @json($activeSession);
+
+        function openSession(sessionId) {
+
+            currentSessionId = sessionId;
+
+            $("#chatBody").removeClass("d-none");
+            $("#chatFooter").removeClass("d-none");
+            $("#topicsSection").addClass("d-none");
+
+            $("#chatBody").html('');
+
+            if (!firebaseAppInitialized) {
+
+                const firebaseConfig = {
+                    databaseURL: "{{ env('FIREBASE_DATABASE_URL') }}"
+                };
+
+                firebase.initializeApp(firebaseConfig);
+
+                firebaseDatabase = firebase.database();
+
+                firebaseAppInitialized = true;
+            }
+
+            if (firebaseListener) {
+                firebaseListener.off();
+            }
+
+            firebaseListener = firebaseDatabase.ref(
+                'chats/' + currentSessionId + '/messages'
+            );
+
+            firebaseListener.on('child_added', function(snapshot) {
+
+                const message = snapshot.val();
+
+                appendMessage(message.sender, message.content);
+
+                $("#chatBody").scrollTop(
+                    $("#chatBody")[0].scrollHeight
+                );
+            });
+
+            const sessionRef = firebaseDatabase.ref(
+                'sessions/' + currentSessionId
+            );
+
+            sessionRef.on('value', (snapshot) => {
+
+                const data = snapshot.val();
+
+                if (!data) return;
+
+                let header = 'خدمة العملاء';
+
+                if (data.agent_name) {
+
+                    header = `
+                <span style="color:#0d6efd;">
+                    ${data.agent_name}
+                </span>
+                <small>available</small>
+            `;
+                }
+
+                $(".chat-header h6").html(header);
+
+                if (data.status === 'in_agent') {
+
+                    $(".chat-header small").text("available");
+
+                } else if (data.status === 'waiting_agent') {
+
+                    $(".chat-header h6").html(`
+                <small>في انتظار الرد...</small>
+            `);
+                }
+            });
+
+            $('#chatBody').data('session-id', currentSessionId);
+
+            $('#endChatBtn').removeClass('d-none');
+        }
+
+        $(document).on(
+            "click",
+            ".session-item, .topic-item[data-final='1']",
+            function() {
+
+                const sessionId = $(this).data("id");
+
+                openSession(sessionId);
+            }
+        );
+    </script>
     <script src="{{ asset('assets/js/user/layout.js') }}"></script>
     <script src="{{ asset('assets/js/user/sendMessage.js') }}"></script>
     <script>
@@ -169,7 +268,7 @@
             $("#chatFooter").removeClass("d-none");
             $("#topicsSection").addClass("d-none");
             $("#chatBody").html('');
-            // أول مرة فقط نفعّل Firebase
+
             if (!firebaseAppInitialized) {
                 const firebaseConfig = {
                     databaseURL: "{{ env('FIREBASE_DATABASE_URL') }}"
@@ -179,19 +278,16 @@
                 firebaseAppInitialized = true;
             }
 
-            // لو فيه listener قديم شغال على جلسة أخرى، نفصله
             if (firebaseListener) {
                 firebaseListener.off();
             }
 
-            // اربط listener على الجلسة الجديدة
             firebaseListener = firebaseDatabase.ref('chats/' + currentSessionId + '/messages');
 
             firebaseListener.on('child_added', function(snapshot) {
                 const message = snapshot.val();
                 console.log("🔥 New message from Firebase:", message);
 
-                // متضيفش الرسائل اللي أرسلها نفس اليوزر عشان متتكررش
                 appendMessage(message.sender, message.content);
 
                 $("#chatBody").scrollTop($("#chatBody")[0].scrollHeight);
@@ -219,14 +315,13 @@
             const typingRef = firebaseDatabase.ref('sessions/' + currentSessionId + '/typing');
 
             $("input[name='message']").on("input", function() {
-                typingRef.set({
+                typingRef.update({
                     user_typing: true,
                 });
 
-                // نوقف الحالة بعد ثانيتين من التوقف عن الكتابة
                 clearTimeout(window.typingTimeout);
                 window.typingTimeout = setTimeout(() => {
-                    typingRef.set({
+                    typingRef.update({
                         user_typing: false,
                     });
                 }, 2000);
@@ -234,27 +329,37 @@
 
             typingIndicator = document.getElementById('typingIndicator');
             const typingSound = document.getElementById("typingSound");
+
+            typingSound.loop = true;
+
             typingRef.on('value', (snapshot) => {
+
+                console.log("typing snapshot:", snapshot.val());
+                console.log("audioUnlocked:", audioUnlocked);
+
                 const data = snapshot.val();
 
-                if (!data || typeof data.agent_typing === 'undefined') {
+                if (!data || data.agent_typing !== true) {
                     typingIndicator.style.display = "none";
+
                     typingSound.pause();
                     typingSound.currentTime = 0;
+
                     return;
                 }
 
-                if (data.agent_typing === true) {
-                    typingIndicator.innerText = "يكتب الآن...";
-                    typingIndicator.style.display = "block";
-                    if (typingSound.paused) {
-                        typingSound.play().catch(() => {})
-                    }
-                } else {
-                    typingIndicator.style.display = "none";
-                    typingSound.pause();
-                    typingSound.currentTime = 0;
-                }
+                typingIndicator.innerText = "يكتب الآن...";
+                typingIndicator.style.display = "block";
+
+                typingSound.currentTime = 0;
+
+                typingSound.play()
+                    .then(() => {
+                        console.log("sound played");
+                    })
+                    .catch(err => {
+                        console.log("play failed:", err);
+                    });
             });
         });
     </script>
@@ -263,7 +368,6 @@
         $(document).on('click', '#endChatBtn', function() {
             if (!confirm('هل أنت متأكد أنك تريد إنهاء المحادثة؟')) return;
 
-            // نجيب رقم الجلسة المفتوحة حالياً
             let sessionId = $('#chatBody').data('session-id');
             console.log("🔍 Current session ID:", sessionId);
             if (!sessionId) {
@@ -280,16 +384,110 @@
                 success: function(response) {
                     $(".chat-header h6").html(`<small>خدمة العملاء</small>`);
                     $('#endChatBtn').addClass('d-none');
-                    // $('#chatBody').html(
-                    //     '<p class="text-center text-muted">This chat has ended</p>');
                     $('#chatFooter').addClass('d-none');
 
-                    alert(response.message);
+                    $('#chatBody').html(`
+                        <div class="chat-message text-center text-muted mb-3" style="width:100%;">
+                            تم إنهاء المحادثة بنجاح. نرجو منك تقييم تجربتك مع خدمة العملاء 🙏
+                        </div>
+
+                        <div id="ratingSection" class="text-center mt-3">
+                            <h6>هل كانت المحادثة مفيدة؟</h6>
+                            <div class="rating-buttons my-2">
+                                <button class="btn btn-outline-success me-2" id="rateHelpful">
+                                    <i class="fa-solid fa-thumbs-up"></i> نعم
+                                </button>
+                                <button class="btn btn-outline-danger" id="rateNotHelpful">
+                                    <i class="fa-solid fa-thumbs-down"></i> لا
+                                </button>
+                            </div>
+
+                            <div id="commentBox" class="mt-3 d-none">
+                                <textarea class="form-control mb-2" id="ratingComment" rows="3"
+                                style="height: 74px" placeholder="يمكنك ترك تعليق (اختياري)"></textarea>
+                                <button class="btn btn-primary" id="submitRating">إرسال التقييم</button>
+                            </div>
+                        </div>
+                    `);
+                    let userRating = null;
+
+                    $('#rateHelpful').on('click', function() {
+                        userRating = 1;
+                        $('#rateHelpful').addClass('btn-success text-white');
+                        $('#rateNotHelpful').removeClass('btn-danger text-white');
+                        $('#commentBox').removeClass('d-none');
+                    });
+                    $('#rateNotHelpful').on('click', function() {
+                        userRating = 0;
+                        $('#rateNotHelpful').addClass('btn-danger text-white');
+                        $('#rateHelpful').removeClass('btn-success text-white');
+                        $('#commentBox').removeClass('d-none');
+                    });
+
+                    $('#submitRating').on('click', function() {
+                        const comment = $('#ratingComment').val();
+
+                        $.ajax({
+                            url: `/chat/${sessionId}/rate`,
+                            method: 'POST',
+                            data: {
+                                _token: '{{ csrf_token() }}',
+                                rating: userRating,
+                                comment: comment
+                            },
+                            success: function(response) {
+                                $('#ratingSection').html(`
+                                    <div class="alert alert-success mt-3">
+                                        ${response.message}
+                                    </div>
+                                `);
+                            },
+                            error: function() {
+                                alert('حدث خطأ أثناء إرسال التقييم');
+                            }
+                        });
+                    });
                 },
                 error: function(xhr) {
                     alert('حدث خطأ أثناء إنهاء الجلسة.');
                 }
             });
+        });
+
+        $(document).ready(function() {
+
+            if (window.activeSession) {
+
+                openSession(window.activeSession.id);
+            }
+        });
+
+        let audioUnlocked = false;
+
+        $(document).ready(function() {
+
+            const typingSound = document.getElementById("typingSound");
+
+            // unlock audio
+            $(document).one('click', function() {
+
+                typingSound.volume = 1;
+
+                typingSound.play()
+                    .then(() => {
+
+                        typingSound.pause();
+                        typingSound.currentTime = 0;
+
+                        audioUnlocked = true;
+
+                        console.log("Audio unlocked");
+
+                    })
+                    .catch(console.log);
+
+            });
+
         });
     </script>
 

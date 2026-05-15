@@ -8,6 +8,7 @@ use App\Models\SessionChat;
 use Illuminate\Http\Request;
 use Kreait\Firebase\Factory;
 use App\Http\Controllers\Controller;
+use App\Models\SessionAgent;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
@@ -24,6 +25,12 @@ class DashboardController extends Controller
         $session->agent_id = $agent->id;
         $session->waiting_started_at = null;
         $session->save();
+
+        SessionAgent::create([
+            'session_id' => $session->id,
+            'agent_id'   => $agent->id,
+            'started_at' => now(),
+        ]);
 
         $session->messages()
         ->whereNull('receiver_id')

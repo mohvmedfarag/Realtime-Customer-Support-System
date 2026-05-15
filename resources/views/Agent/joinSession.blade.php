@@ -245,7 +245,7 @@
                         message: message
                     },
                     success: function(response) {
-                        typingRef.set({
+                        typingRef.update({
                             agent_typing: false,
                         });
                         messageInput.val('');
@@ -264,14 +264,14 @@
         const typingRef = database.ref('sessions/{{ $session->id }}/typing');
 
         $("input[name='message']").on("input", function() {
-            typingRef.set({
+            typingRef.update({
                 agent_typing: true,
             });
 
             // نوقف الحالة بعد ثانيتين من التوقف عن الكتابة
             clearTimeout(window.typingTimeout);
             window.typingTimeout = setTimeout(() => {
-                typingRef.set({
+                typingRef.update({
                     agent_typing: false,
                 });
             }, 9000);

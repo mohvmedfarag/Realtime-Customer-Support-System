@@ -328,36 +328,6 @@
             </div>
         </div>
         <!-- End Starred Sidebar -->
-
-        <!-- Chat Sessions -->
-        {{-- <div class="d-flex flex-column mt-4">
-            <i class="fa-solid fa-caret-left fa-lg" id="close-sidebar"></i>
-            <i class="fa-solid fa-caret-right fa-lg d-none" id="open-sidebar"></i>
-        </div> --}}
-        {{-- <div class="sessions-sidebar">
-            <div class="session-item new-chat">
-                <h6 class="mb-3"> دردشة جديدة <i class="fa-regular fa-comment"></i> </h6>
-            </div>
-            <hr>
-            <h6 class="mb-3">الدردشات<i class="fa-regular fa-comments"></i></h6>
-            @foreach ($sessions as $s)
-
-                <div class="session-item">
-                    <div class="d-flex justify-content-between align-items-center">
-                        @if (!$s->name == null)
-                            <strong>{{ $s->name }}<i class="fa-regular fa-comment"></i>
-                                #{{ $loop->iteration }}</strong><br>
-                        @else
-                            <strong>دردشة<i class="fa-regular fa-comment"></i> #{{ $loop->iteration }}</strong><br>
-                        @endif
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <small>{{ \Carbon\Carbon::parse($s->created_at)->format('d/m h:i A') }}</small>
-                        <small>{{ $s->status }}</small>
-                    </div>
-                </div>
-            @endforeach
-        </div> --}}
     </div>
 
     <!-- Bootstrap & jQuery -->
@@ -1552,7 +1522,6 @@
             }, 300); // wait for fade
         });
     </script>
-
 
 </body>
 

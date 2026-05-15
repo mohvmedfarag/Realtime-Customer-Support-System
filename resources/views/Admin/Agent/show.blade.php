@@ -10,11 +10,6 @@
             </a>
 
             <div class="d-flex align-items-center">
-                <!-- صورة الوكيل -->
-                {{-- <img src="{{ $agent->avatar ?? asset('assets/default-avatar.png') }}"
-                 class="rounded-circle border me-3"
-                 alt="Agent Avatar" width="80" height="80"> --}}
-
                 <div>
                     <h4 class="mb-1">{{ $agent->name }}</h4>
                     <p class="text-muted mb-2">{{ $agent->email }}</p>

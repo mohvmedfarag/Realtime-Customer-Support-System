@@ -2,30 +2,44 @@
 
 namespace App\Http\Controllers\Web\User\Dashboard;
 
+use App\Http\Controllers\Controller;
 use App\Models\Agent;
-use App\Models\Message;
 use App\Models\ChatTopic;
+use App\Models\SessionAgent;
 use App\Models\SessionChat;
 use Illuminate\Http\Request;
-use Kreait\Firebase\Factory;
-use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Kreait\Firebase\Factory;
 
 class DashboardController extends Controller
 {
     public function index()
     {
         $user = Auth::user();
+
         $topics = ChatTopic::where('parent_id', null)->get();
+
         $sessions = $user->chat->sessionChats()->get();
-        return view('User.layout', compact('user', 'topics', 'sessions'));
+
+        $activeSession = $user->chat->sessionChats()
+            ->whereIn('status', ['waiting_agent', 'in_agent'])
+            ->latest()
+            ->first();
+
+        return view('User.layout', compact(
+            'user',
+            'topics',
+            'sessions',
+            'activeSession'
+        ));
     }
 
     public function getSubTopics($id)
     {
         $topic = ChatTopic::with('children')->findOrFail($id);
+
         return response()->json([
-            'children' => $topic->children
+            'children' => $topic->children,
         ]);
     }
 
@@ -35,19 +49,19 @@ class DashboardController extends Controller
         $user = Auth::user();
 
         $activeSession = $user->chat->sessionChats()
-        ->whereIn('status', ['waiting_agent', 'in_agent'])
-        ->first();
+            ->whereIn('status', ['waiting_agent', 'in_agent'])
+            ->first();
 
         if ($activeSession) {
             return response()->json([
                 'error' => 'لا يمكنك فتح جلسة جديدة أثناء وجود جلسة نشطة بالفعل.',
-                'active_session_id' => $activeSession->id
+                'active_session_id' => $activeSession->id,
             ], 403);
         }
 
         $randomAgent = Agent::where('status', 'online')->inRandomOrder()->first();
 
-        if (!$topic || !$topic->is_final) {
+        if (! $topic || ! $topic->is_final) {
             return response()->json(['error' => 'الموضوع غير صالح أو ليس نهائيًا.'], 400);
         }
 
@@ -59,6 +73,7 @@ class DashboardController extends Controller
         if ($existingSession) {
             if ($existingSession->status === 'in_agent') {
                 $messages = $existingSession->messages()->oldest()->get();
+
                 return response()->json([
                     'messages' => $messages,
                     'session' => $existingSession,
@@ -71,21 +86,22 @@ class DashboardController extends Controller
                 'waiting_started_at' => now(),
             ]);
 
-            //////////////////////////////////
+            // ////////////////////////////////
             $database = $this->getFirebaseDatabase();
             $database->getReference("sessions/{$existingSession->id}")
                 ->set([
-                    'id'         => $existingSession->id,
-                    'name'       => $existingSession->name,
-                    'status'     => $existingSession->status,
-                    'user_name'  => $user->name,
-                    'user_id'    => $user->id,
+                    'id' => $existingSession->id,
+                    'name' => $existingSession->name,
+                    'status' => $existingSession->status,
+                    'user_name' => $user->name,
+                    'user_id' => $user->id,
                     'agent_name' => $randomAgent->name,
-                    'agent_id'   => $randomAgent->id,
+                    'agent_id' => $randomAgent->id,
                     'created_at' => now()->toDateTimeString(),
                 ]);
 
             $messages = $existingSession->messages()->oldest()->get();
+
             return response()->json([
                 'messages' => $messages,
                 'session' => $existingSession,
@@ -103,13 +119,13 @@ class DashboardController extends Controller
         $database = $this->getFirebaseDatabase();
         $database->getReference("sessions/{$session->id}")
             ->set([
-                'id'         => $session->id,
-                'name'       => $session->name,
-                'status'     => $session->status,
-                'user_name'  => $user->name,
-                'user_id'    => $user->id,
+                'id' => $session->id,
+                'name' => $session->name,
+                'status' => $session->status,
+                'user_name' => $user->name,
+                'user_id' => $user->id,
                 'agent_name' => $randomAgent->name,
-                'agent_id'   => $randomAgent->id,
+                'agent_id' => $randomAgent->id,
                 'created_at' => now()->toDateTimeString(),
             ]);
 
@@ -127,27 +143,28 @@ class DashboardController extends Controller
 
         if ($session->status === 'in_agent') {
             $messages = $session->messages()->oldest()->get();
+
             return response()->json([
                 'messages' => $messages,
-                'session'  => $session,
+                'session' => $session,
             ]);
         }
 
         $activeSession = $user->chat->sessionChats()
-        ->whereIn('status', ['waiting_agent', 'in_agent'])
-        ->first();
+            ->whereIn('status', ['waiting_agent', 'in_agent'])
+            ->first();
 
         if ($activeSession && $activeSession->id != $session->id) {
             return response()->json([
                 'error' => 'لا يمكنك فتح جلسة جديدة أثناء وجود جلسة نشطة بالفعل.',
-                'active_session_id' => $activeSession->id
+                'active_session_id' => $activeSession->id,
             ], 403);
         }
 
         $randomAgent = Agent::where('status', 'online')->inRandomOrder()->first();
-        if (!$randomAgent && $session->status !== 'in_agent') {
+        if (! $randomAgent && $session->status !== 'in_agent') {
             return response()->json([
-                'error' => 'No agents available at the moment. Please try again later.'
+                'error' => 'No agents available at the moment. Please try again later.',
             ], 503);
         }
 
@@ -160,19 +177,20 @@ class DashboardController extends Controller
         $database = $this->getFirebaseDatabase();
         $database->getReference("sessions/{$session->id}")
             ->set([
-                'id'         => $session->id,
-                'name'       => $session->name,
-                'status'     => $session->status,
-                'user_name'  => $user->name,
-                'user_id'    => $user->id,
+                'id' => $session->id,
+                'name' => $session->name,
+                'status' => $session->status,
+                'user_name' => $user->name,
+                'user_id' => $user->id,
                 'agent_name' => $randomAgent->name,
-                'agent_id'   => $randomAgent->id,
+                'agent_id' => $randomAgent->id,
                 'created_at' => now()->toDateTimeString(),
             ]);
         $messages = $session->messages()->oldest()->get();
+
         return response()->json([
             'messages' => $messages,
-            'session'  => $session,
+            'session' => $session,
         ]);
     }
 
@@ -181,13 +199,13 @@ class DashboardController extends Controller
         $user = Auth::user();
 
         $activeSession = $user->chat->sessionChats()
-        ->whereIn('status', ['waiting_agent', 'in_agent'])
-        ->first();
+            ->whereIn('status', ['waiting_agent', 'in_agent'])
+            ->first();
 
         if ($activeSession) {
             return response()->json([
                 'error' => 'لا يمكنك فتح جلسة جديدة أثناء وجود جلسة نشطة بالفعل.',
-                'active_session_id' => $activeSession->id
+                'active_session_id' => $activeSession->id,
             ], 403);
         }
 
@@ -198,14 +216,14 @@ class DashboardController extends Controller
         $existing = $user->chat->sessionChats()->where('name', $request->name)->first();
         if ($existing) {
             return response()->json([
-                'message'    => 'لديك جلسة بالفعل بنفس الاسم',
+                'message' => 'لديك جلسة بالفعل بنفس الاسم',
                 'session_id' => $existing->id,
             ], 409);
         }
 
         $randomAgent = Agent::where('status', 'online')->inRandomOrder()->first();
         $session = $user->chat->sessionChats()->create([
-            'name'   => $request->name,
+            'name' => $request->name,
             'status' => 'waiting_agent',
             'agent_id' => $randomAgent->id,
             'waiting_started_at' => now(),
@@ -214,13 +232,13 @@ class DashboardController extends Controller
         $database = $this->getFirebaseDatabase();
         $database->getReference("sessions/{$session->id}")
             ->set([
-                'id'         => $session->id,
-                'name'       => $session->name,
-                'status'     => $session->status,
-                'user_name'  => $user->name,
-                'user_id'    => $user->id,
+                'id' => $session->id,
+                'name' => $session->name,
+                'status' => $session->status,
+                'user_name' => $user->name,
+                'user_id' => $user->id,
                 'agent_name' => $randomAgent->name,
-                'agent_id'   => $randomAgent->id,
+                'agent_id' => $randomAgent->id,
                 'created_at' => now()->toDateTimeString(),
             ]);
 
@@ -230,7 +248,8 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function sendMessageByUser(Request $request){
+    public function sendMessageByUser(Request $request)
+    {
         $request->validate([
             'session_id' => 'required|exists:session_chats,id',
             'content' => 'required|string',
@@ -273,6 +292,19 @@ class DashboardController extends Controller
     public function closeChat(SessionChat $session)
     {
         if ($session->status === 'waiting_agent' || $session->status === 'in_agent') {
+
+            if ($session->status === 'in_agent') {
+                $lastSessionAgent = SessionAgent::where('session_id', $session->id)
+                    ->whereNull('ended_at')
+                    ->latest('started_at')->first();
+
+                if ($lastSessionAgent) {
+                    $lastSessionAgent->update([
+                        'ended_at' => now(),
+                    ]);
+                }
+            }
+
             $session->update([
                 'status' => 'closed',
                 'agent_id' => null,

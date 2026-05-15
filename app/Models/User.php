@@ -28,22 +28,6 @@ class User extends Authenticatable
         return $this->hasOne(Chat::class, 'user_id', 'id');
     }
 
-    public function feedbackGiven()
-    {
-        return $this->morphMany(Feedback::class, 'rater');
-    }
-
-    public function feedbackReceived()
-    {
-        return $this->morphMany(Feedback::class, 'rated');
-    }
-
-    // public function getAverageRatingAttribute()
-    // {
-    //     return round($this->ratingsReceived()->avg('rating'), 1) ?? 0;
-    // }
-
-
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -66,4 +50,10 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class, 'user_id', 'id');
+    }
+
 }
